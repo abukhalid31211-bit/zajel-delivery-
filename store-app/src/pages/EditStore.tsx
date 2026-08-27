@@ -7,7 +7,7 @@ import OTPInput from '../components/OTPInput'
 import Countdown from '../components/Countdown'
 import { useToast } from '../components/Modal'
 import { useStore } from '../lib/StoreContext'
-import { BUSINESS_TYPES, zoneFor, isValidIraqiPhone } from '../lib/data'
+import { BUSINESS_TYPES, OTHER_TYPE, zoneFor, isValidIraqiPhone } from '../lib/data'
 import { LocationPicker, zoneRing, DEFAULT_CENTER } from '../lib/MapLib'
 
 const badgeInstant = <span className="badge bg-gold text-white">فوري</span>
@@ -23,10 +23,17 @@ export default function EditStore() {
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
     name: profile?.name ?? '',
-    type: profile?.type ?? '',
+    type: (() => {
+      const t = profile?.type ?? ''
+      return t && !BUSINESS_TYPES.includes(t) ? OTHER_TYPE : t
+    })(),
     phone: profile?.phone ?? '',
     owner: profile?.owner ?? '',
     address: profile?.address ?? '',
+  })
+  const [customType, setCustomType] = useState(() => {
+    const t = profile?.type ?? ''
+    return t && !BUSINESS_TYPES.includes(t) ? t : ''
   })
   const [loc, setLoc] = useState(profile?.location ?? DEFAULT_CENTER)
   const [locMoved, setLocMoved] = useState(false)
@@ -39,11 +46,12 @@ export default function EditStore() {
       /* التعديلات البسيطة تُطبق فوراً */
       updateProfile({ name: form.name.trim() || profile?.name, address: form.address.trim() || profile?.address })
       /* التعديلات الحساسة تُرسل للمراجعة */
-      const sensitiveChanged = form.type !== profile?.type || form.owner !== profile?.owner || locMoved
+      const resolvedType = form.type === OTHER_TYPE ? customType.trim() : form.type
+      const sensitiveChanged = resolvedType !== profile?.type || form.owner !== profile?.owner || locMoved
       if (sensitiveChanged) {
         updateProfile(
           {
-            type: form.type,
+            type: resolvedType,
             owner: form.owner,
             location: locMoved ? loc : profile?.location ?? undefined,
           },
@@ -127,10 +135,24 @@ export default function EditStore() {
             نوع النشاط {badgeReview}
           </label>
           <select className="field cursor-pointer" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}>
+            <option value="" disabled>
+              اختر نوع النشاط
+            </option>
             {BUSINESS_TYPES.map((t) => (
-              <option key={t.label}>{t.label}</option>
+              <option key={t} value={t}>
+                {t}
+              </option>
             ))}
+            <option value={OTHER_TYPE}>{OTHER_TYPE}</option>
           </select>
+          {form.type === OTHER_TYPE && (
+            <input
+              className="field mt-2"
+              placeholder="اكتب نوع النشاط"
+              value={customType}
+              onChange={(e) => setCustomType(e.target.value)}
+            />
+          )}
         </div>
         <div>
           <label className="mb-1.5 flex items-center justify-between text-xs font-bold">
