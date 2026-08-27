@@ -1,1 +1,0 @@
-clean_docs/captain_app.md
