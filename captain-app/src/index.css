@@ -1,0 +1,193 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --color-ink: #000000;
+  --color-paper: #ffffff;
+  --color-page: #f5f5f5;
+  --color-line: #e0e0e0;
+  --color-mute: #666666;
+  --color-faint: #999999;
+}
+
+html {
+  font-family: var(--font-sans);
+}
+
+body {
+  background-color: #e9e9e9;
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+*::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+}
+
+/* ---------- app shell (mobile frame) ---------- */
+@utility app-shell {
+  position: relative;
+  margin-inline: auto;
+  min-height: 100dvh;
+  width: 100%;
+  max-width: 430px;
+  background: var(--color-page);
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  @media (min-width: 431px) {
+    box-shadow: 0 0 0 1px #d4d4d4, 0 24px 64px rgba(0, 0, 0, 0.18);
+  }
+}
+
+/* ---------- primitives ---------- */
+@utility card {
+  background: var(--color-paper);
+  border: 1px solid var(--color-line);
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+@utility btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #000;
+  color: #fff;
+  font-weight: 600;
+  border-radius: 14px;
+  padding: 0.875rem 1.25rem;
+  font-size: 0.9375rem;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  &:active {
+    transform: scale(0.98);
+  }
+  &:disabled {
+    background: #999;
+    cursor: not-allowed;
+  }
+}
+
+@utility btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #fff;
+  color: #000;
+  font-weight: 600;
+  border: 1.5px solid #000;
+  border-radius: 14px;
+  padding: 0.8125rem 1.25rem;
+  font-size: 0.9375rem;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+@utility field {
+  width: 100%;
+  background: #fff;
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  padding: 0.8125rem 1rem;
+  font-size: 0.9375rem;
+  color: #000;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  &::placeholder {
+    color: #999;
+  }
+  &:focus {
+    border-color: #000;
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
+  }
+}
+
+@utility badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  padding: 0.1875rem 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ---------- animations ---------- */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility animate-fade-up {
+  animation: fadeUp 0.4s ease both;
+}
+
+@keyframes logoPulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0));
+  }
+  50% {
+    transform: scale(1.06);
+    filter: drop-shadow(0 0 24px rgba(255, 255, 255, 0.25));
+  }
+}
+
+@utility animate-logo-pulse {
+  animation: logoPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes splashRing {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@utility animate-splash-ring {
+  animation: splashRing 3s linear infinite;
+}
+
+@keyframes progressGrow {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+@utility animate-progress-10s {
+  animation: progressGrow 10s linear forwards;
+}
+
+@keyframes floatDot {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
+}
+
+@utility animate-float-dot {
+  animation: floatDot 1.6s ease-in-out infinite;
+}
