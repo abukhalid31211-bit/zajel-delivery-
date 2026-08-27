@@ -51,7 +51,7 @@ export function logSecurity(partial: Omit<SecurityEntry, 'id' | 'at' | 'ip' | 'd
   dbSet('security', list)
 }
 
-export const PERM_SECTIONS = ['الكباتن', 'المحلات', 'الطلبيات', 'الأسعار', 'المناطق', 'الشفتات', 'التقارير', 'الإشعارات', 'الشكاوى', 'الإعدادات']
+export const PERM_SECTIONS = ['الكباتن', 'المحلات', 'الطلبيات', 'الأسعار', 'تخصيص الأسعار', 'المناطق', 'الشفتات', 'التقارير', 'الإشعارات', 'الشكاوى', 'الإعدادات']
 export const PERM_ACTIONS = ['مشاهدة', 'إضافة', 'تعديل', 'موافقة', 'إيقاف', 'حذف']
 
 export const VEHICLES = ['دراجة نارية 🏍️', 'سيارة 🚗', 'دراجة هوائية 🚲', 'مشي 🚶']

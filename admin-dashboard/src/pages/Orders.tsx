@@ -13,6 +13,7 @@ import { logAudit, ORDER_STATUSES, useDbList } from '../lib/store'
 import { uid, nowIso, formatDate } from '../lib/db'
 import { can, inGeoScope } from '../lib/rbac'
 import { ACTIVE_STATUSES, isStuck, shouldAutoCancel, waitMinutes } from '../lib/orders'
+import { overrideFor } from '../lib/pricing'
 import type { Captain, District, Governorate, OrderItem, StoreItem } from '../lib/types'
 
 const tabs = [
@@ -258,7 +259,14 @@ export default function Orders() {
       {create && (
         <Modal title="إنشاء طلب" onClose={() => setCreate(false)} wide>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <select className="field cursor-pointer" value={form.storeId} onChange={(e) => saveDraft({ ...form, storeId: e.target.value })}>
+            <select
+              className="field cursor-pointer"
+              value={form.storeId}
+              onChange={(e) => {
+                const custom = overrideFor(e.target.value)
+                saveDraft({ ...form, storeId: e.target.value, fee: custom ? custom.fee : form.fee })
+              }}
+            >
               <option value="">{stores.length ? 'اختر المحل' : 'أضف محلاً أولاً من صفحة المحلات'}</option>
               {stores.map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
@@ -282,6 +290,11 @@ export default function Orders() {
             <input className="field" placeholder="بدأت الانتظار منذ (دقيقة) — لاختبار العالق" value={form.waitOffset} onChange={(e) => saveDraft({ ...form, waitOffset: e.target.value.replace(/[^\d]/g, '') })} />
             <textarea className="field min-h-16 sm:col-span-2" placeholder="ملاحظات" value={form.notes} onChange={(e) => saveDraft({ ...form, notes: e.target.value })} />
           </div>
+          {form.storeId && overrideFor(form.storeId) && (
+            <p className="mt-2 text-[10px] font-bold">
+              🏷️ أجرة التوصيل معبّأة تلقائياً من «تخصيص الأسعار» لهذا المحل ({overrideFor(form.storeId)?.fee} د.ع) — يمكن تعديلها يدوياً قبل الحفظ.
+            </p>
+          )}
           <p className="mt-2 text-[10px] text-faint">يُحفظ المسودة محلياً إن انتهت الجلسة. لتجربة العالق: الحالة «بانتظار كابتن» والانتظار 15 أو 20.</p>
           <div className="mt-4 flex gap-2">
             <button className="btn-primary flex-1" onClick={createOrder}>حفظ</button>
