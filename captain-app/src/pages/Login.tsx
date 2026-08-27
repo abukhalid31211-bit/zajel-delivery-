@@ -94,18 +94,6 @@ export default function Login() {
 
           {apiError && <p className="rounded-xl border border-red-200 bg-white px-4 py-3 text-xs font-semibold text-red-600">⚠ {apiError}</p>}
 
-          <button
-            type="button"
-            onClick={() => {
-              setPhone('7803302376')
-              setPassword('12345678')
-              setApiError('')
-            }}
-            className="w-full rounded-2xl border border-dashed border-gold bg-white px-4 py-3 text-center text-[11px] font-bold text-gold-dark transition-colors active:bg-gold-light/40"
-          >
-            🖊️ تعبئة بيانات الدخول التنفيذي (7 803 302 376 · 12345678)
-          </button>
-
           <button className="btn-primary w-full" disabled={loading}>
             {loading ? (
               <>
