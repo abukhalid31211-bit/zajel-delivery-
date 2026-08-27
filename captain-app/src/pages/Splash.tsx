@@ -1,18 +1,27 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useCaptain } from '../state'
 
 export default function Splash() {
   const navigate = useNavigate()
+  const { state } = useCaptain()
   const [seconds, setSeconds] = useState(10)
 
   useEffect(() => {
     const tick = setInterval(() => setSeconds((s) => (s > 1 ? s - 1 : 0)), 1000)
-    const done = setTimeout(() => navigate('/welcome', { replace: true }), 10000)
+    const done = setTimeout(() => {
+      const captain = state.captain
+      if (!captain) return navigate('/welcome', { replace: true })
+      if (captain.status === 'pending') return navigate('/pending', { replace: true })
+      if (captain.status === 'rejected') return navigate('/rejected', { replace: true })
+      if (captain.status === 'suspended') return navigate('/suspended', { replace: true })
+      return navigate('/home', { replace: true })
+    }, 10000)
     return () => {
       clearInterval(tick)
       clearTimeout(done)
     }
-  }, [navigate])
+  }, [navigate, state.captain])
 
   return (
     <div className="app-shell items-center justify-between !bg-black text-white">

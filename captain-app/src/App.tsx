@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import OfflineBanner from './components/OfflineBanner'
+import SessionExpiry from './components/SessionExpiry'
 import Splash from './pages/Splash'
 import Welcome from './pages/Welcome'
 import Login from './pages/Login'
@@ -26,6 +27,7 @@ import Documents from './pages/Documents'
 import ChangePassword from './pages/ChangePassword'
 import NewComplaint from './pages/NewComplaint'
 import Complaints from './pages/Complaints'
+import ComplaintDetail from './pages/ComplaintDetail'
 import Support from './pages/Support'
 import { About, Language, DeleteAccount } from './pages/Misc'
 import { Suspended, Rejected, UpdateRequired, Maintenance } from './pages/SystemStates'
@@ -34,6 +36,7 @@ export default function App() {
   return (
     <>
       <OfflineBanner />
+      <SessionExpiry />
       <Routes>
         <Route path="/" element={<Splash />} />
         <Route path="/welcome" element={<Welcome />} />
@@ -60,6 +63,7 @@ export default function App() {
         <Route path="/change-password" element={<ChangePassword />} />
         <Route path="/complaints" element={<Complaints />} />
         <Route path="/complaints/new" element={<NewComplaint />} />
+        <Route path="/complaints/:id" element={<ComplaintDetail />} />
         <Route path="/support" element={<Support />} />
         <Route path="/about" element={<About />} />
         <Route path="/language" element={<Language />} />

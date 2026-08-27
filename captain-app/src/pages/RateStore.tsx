@@ -1,15 +1,26 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowRight, Star } from 'lucide-react'
 import { useToast } from '../components/Toast'
+import { useCaptain } from '../state'
 
 export default function RateStore() {
   const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const { getOrder, rateStore } = useCaptain()
   const { toast, node } = useToast()
+  const order = getOrder(params.get('order') || '')
   const [stars, setStars] = useState(0)
   const [ready, setReady] = useState<string | null>(null)
   const [treat, setTreat] = useState<string | null>(null)
   const [comment, setComment] = useState('')
+
+  const submit = () => {
+    if (!order) return
+    rateStore(order.id, { ready: ready || '', treat: treat || '', stars, comment })
+    toast('شكراً لتقييمك! ⭐')
+    setTimeout(() => navigate('/home'), 1200)
+  }
 
   return (
     <div className="app-shell">
@@ -19,7 +30,7 @@ export default function RateStore() {
         </button>
         <div>
           <h1 className="text-base font-bold">تقييم المحل</h1>
-          <p className="text-[10px] text-mute">كيف كانت تجربتك مع المحل في الطلب #—؟</p>
+          <p className="text-[10px] text-mute">كيف كانت تجربتك مع {order?.shopName || 'المحل'} في {order?.title || 'الطلب'}؟</p>
         </div>
       </div>
 
@@ -28,13 +39,7 @@ export default function RateStore() {
           <p className="mb-3 text-xs font-bold">هل كانت الطلبية جاهزة عند وصولك؟</p>
           <div className="flex gap-2">
             {['نعم ✅', 'تأخرت قليلاً ⏳', 'لا ❌'].map((o) => (
-              <button
-                key={o}
-                onClick={() => setReady(o)}
-                className={`flex-1 rounded-xl border px-2 py-2.5 text-[11px] font-bold transition-colors ${ready === o ? 'border-black bg-black text-white' : 'border-line bg-white text-mute'}`}
-              >
-                {o}
-              </button>
+              <button key={o} onClick={() => setReady(o)} className={`flex-1 rounded-xl border px-2 py-2.5 text-[11px] font-bold transition-colors ${ready === o ? 'border-gold bg-gold text-white' : 'border-line bg-white text-mute'}`}>{o}</button>
             ))}
           </div>
         </div>
@@ -43,13 +48,7 @@ export default function RateStore() {
           <p className="mb-3 text-xs font-bold">هل كان التعامل جيداً؟</p>
           <div className="flex gap-2">
             {['نعم ✅', 'لا ❌'].map((o) => (
-              <button
-                key={o}
-                onClick={() => setTreat(o)}
-                className={`flex-1 rounded-xl border px-2 py-2.5 text-[11px] font-bold transition-colors ${treat === o ? 'border-black bg-black text-white' : 'border-line bg-white text-mute'}`}
-              >
-                {o}
-              </button>
+              <button key={o} onClick={() => setTreat(o)} className={`flex-1 rounded-xl border px-2 py-2.5 text-[11px] font-bold transition-colors ${treat === o ? 'border-gold bg-gold text-white' : 'border-line bg-white text-mute'}`}>{o}</button>
             ))}
           </div>
         </div>
@@ -59,7 +58,7 @@ export default function RateStore() {
           <div className="flex justify-center gap-2" dir="ltr">
             {[1, 2, 3, 4, 5].map((n) => (
               <button key={n} onClick={() => setStars(n)}>
-                <Star className={`h-9 w-9 transition-all ${n <= stars ? 'fill-black text-black' : 'text-line'}`} strokeWidth={1.5} />
+                <Star className={`h-9 w-9 transition-all ${n <= stars ? 'fill-gold text-gold' : 'text-line'}`} strokeWidth={1.5} />
               </button>
             ))}
           </div>
@@ -69,19 +68,8 @@ export default function RateStore() {
       </div>
 
       <div className="space-y-2.5 border-t border-line bg-white px-5 py-4">
-        <button
-          className="btn-primary w-full"
-          disabled={stars === 0}
-          onClick={() => {
-            toast('شكراً لتقييمك! ⭐')
-            setTimeout(() => navigate('/home'), 1200)
-          }}
-        >
-          إرسال التقييم
-        </button>
-        <button className="w-full text-center text-xs font-bold text-mute" onClick={() => navigate('/home')}>
-          تخطي
-        </button>
+        <button className="btn-primary w-full" disabled={stars === 0} onClick={submit}>إرسال التقييم</button>
+        <button className="w-full text-center text-xs font-bold text-mute" onClick={() => navigate('/home')}>تخطي</button>
       </div>
 
       {node}

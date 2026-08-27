@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Siren, MapPin, Clock, Hash } from 'lucide-react'
 import Modal from '../components/Modal'
 import { useToast } from '../components/Toast'
+import { useCaptain } from '../state'
 
 export default function Emergency() {
   const navigate = useNavigate()
   const { toast, node } = useToast()
+  const { sendEmergency } = useCaptain()
   const [confirm, setConfirm] = useState(false)
   const [desc, setDesc] = useState('')
 
@@ -70,6 +72,7 @@ export default function Emergency() {
               className="btn-primary flex-1"
               onClick={() => {
                 setConfirm(false)
+                sendEmergency(desc)
                 toast('تم إرسال تنبيه الطوارئ 🚨 ستتواصل معك الإدارة قريباً')
                 setTimeout(() => navigate(-1), 1500)
               }}
