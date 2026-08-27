@@ -151,10 +151,11 @@ export default function Pricing() {
             <button className="btn-primary" onClick={() => setAddGeo(true)}>+ إضافة منطقة سعرية</button>
           </div>
           <MapCanvas
+            governorate={govs.items.find((g) => g.id === govId)?.name ?? null}
             zones={zoneDistricts.map((d) => d.points).filter((p) => p.length > 2)}
             tools={false}
             height={280}
-            hint="تظهر المضلعات المرسومة للمناطق هنا على الخريطة الحقيقية. اربط كل منطقة بسعر من الجدول."
+            hint="تظهر المضلعات المرسومة للمناطق هنا على خريطة العراق الحقيقية — اختر محافظة للانتقال إليها والتكبير على مناطقها. اربط كل منطقة بسعر من الجدول."
           />
           <div className="mt-4">
             <DataTable

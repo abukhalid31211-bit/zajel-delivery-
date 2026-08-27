@@ -28,6 +28,7 @@ export default function Zones() {
   const [editName, setEditName] = useState('')
   const [govFilter, setGovFilter] = useState('')
   const [geoId, setGeoId] = useState('')
+  const [geoGovId, setGeoGovId] = useState('')
   const [err, setErr] = useState('')
   const { toast, node } = useToast()
 
@@ -36,6 +37,11 @@ export default function Zones() {
     [districts.items, govFilter],
   )
   const geoDistrict = districts.items.find((d) => d.id === geoId)
+  const geoDistricts = useMemo(
+    () => districts.items.filter((d) => !geoGovId || d.govId === geoGovId),
+    [districts.items, geoGovId],
+  )
+  const geoGovName = govs.items.find((g) => g.id === geoGovId)?.name ?? null
 
   const saveGov = () => {
     if (!name.trim()) return setErr('اسم المحافظة مطلوب')
@@ -156,7 +162,7 @@ export default function Zones() {
                 '0',
                 <span className="flex items-center gap-1">
                   <Toggle on={d.enabled} onChange={() => districts.setItems((p) => p.map((x) => (x.id === d.id ? { ...x, enabled: !x.enabled } : x)))} />
-                  <button className="btn-ghost px-2 py-1" onClick={() => { setGeoId(d.id); setTab(2) }} title="رسم الحدود">🗺️</button>
+                  <button className="btn-ghost px-2 py-1" onClick={() => { setGeoId(d.id); setGeoGovId(d.govId); setTab(2) }} title="رسم الحدود">🗺️</button>
                   <button className="btn-ghost px-2 py-1" onClick={() => setConfirm(d)}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -173,10 +179,38 @@ export default function Zones() {
       {tab === 2 && (
         <div className="space-y-4">
           <div className="card flex flex-wrap items-center gap-3 p-4">
+            <span className="text-xs font-semibold">المحافظة:</span>
+            <select
+              className="field w-auto min-w-36 cursor-pointer"
+              value={geoGovId}
+              onChange={(e) => {
+                const gid = e.target.value
+                setGeoGovId(gid)
+                // عند تغيير المحافظة تُصفَّر المنطقة إن كانت تتبع محافظة أخرى
+                const d = districts.items.find((x) => x.id === geoId)
+                if (gid && d && d.govId !== gid) setGeoId('')
+              }}
+            >
+              <option value="">🗺️ العراق كامل</option>
+              {govs.items.map((g) => (
+                <option key={g.id} value={g.id}>{g.name}</option>
+              ))}
+            </select>
             <span className="text-xs font-semibold">المنطقة:</span>
-            <select className="field w-auto min-w-44 cursor-pointer" value={geoId} onChange={(e) => setGeoId(e.target.value)}>
+            <select
+              className="field w-auto min-w-44 cursor-pointer"
+              value={geoId}
+              onChange={(e) => {
+                const id = e.target.value
+                setGeoId(id)
+                if (id) {
+                  const d = districts.items.find((x) => x.id === id)
+                  if (d) setGeoGovId(d.govId)
+                }
+              }}
+            >
               <option value="">اختر منطقة</option>
-              {districts.items.map((d) => (
+              {geoDistricts.map((d) => (
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
             </select>
@@ -192,8 +226,16 @@ export default function Zones() {
             </button>
           </div>
           <MapCanvas
+            key={geoDistrict?.id ?? 'none'}
+            governorate={geoGovName}
+            tools={!!geoDistrict}
             points={geoDistrict?.points || []}
             zones={districts.items.filter((d) => d.id !== geoId).map((d) => d.points).filter((p) => p.length > 2)}
+            hint={
+              !geoDistrict
+                ? '🗺️ هذه خريطة العراق الحقيقية — اختر المحافظة والمنطقة بالأعلى، وستنتقل الخريطة تلقائياً إلى المحافظة لبدء رسم حدود المنطقة.'
+                : 'انقر على الخريطة لتحديد نقاط حدود المنطقة، ثم أغلق المضلع بزر الإغلاق أو بالنقر قرب النقطة الأولى.'
+            }
             onChange={(pts) => {
               if (!geoDistrict) return
               districts.setItems((p) => p.map((x) => (x.id === geoDistrict.id ? { ...x, points: pts } : x)))

@@ -200,6 +200,7 @@ export default function CreateOrder() {
                 onChange={(pos) => setPinned(pos)}
                 height={250}
                 zones={zone ? [zoneRing(zone.center, zone.radiusKm)] : []}
+                gps={pinned === DEFAULT_CENTER}
               />
             ) : (
               <div className="relative">

@@ -209,6 +209,7 @@ export default function Register() {
               }}
               height={250}
               zones={zone ? [zoneRing(zone.center, zone.radiusKm)] : []}
+              gps={!pinned}
             >
               <div className="pointer-events-none absolute bottom-3 right-3 z-[500]">
                 <button
