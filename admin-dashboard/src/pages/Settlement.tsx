@@ -6,6 +6,8 @@ import Modal from '../components/Modal'
 import StatusBadge from '../components/StatusBadge'
 import { useToast } from '../components/Toast'
 import { useDbList, logAudit } from '../lib/store'
+import OtherField, { OtherOption } from '../components/OtherOption'
+import { isOther, otherName } from '../lib/customOption'
 import { dbGet, dbSet } from '../lib/db'
 import type { Captain, OrderItem } from '../lib/types'
 
@@ -22,6 +24,8 @@ export default function Settlement() {
   const [open, setOpen] = useState<Captain | null>(null)
   const [amount, setAmount] = useState('')
   const [method, setMethod] = useState('نقدًا')
+  /* «أخرى»: طريقة تسوية يكتبها المدير يدوياً */
+  const [otherMethod, setOtherMethod] = useState('')
   const [notes, setNotes] = useState('')
   const { toast, node } = useToast()
 
@@ -71,7 +75,7 @@ export default function Settlement() {
               `${fee} د.ع`,
               <StatusBadge status={row?.settled ? 'مُسوَّى' : 'لم تُسوَّ'} />,
               row?.settled ? '—' : (
-                <button className="btn-primary px-3 py-1 text-[10px]" onClick={() => { setOpen(c); setAmount(''); setNotes(''); setMethod('نقدًا') }}>تسوية</button>
+                <button className="btn-primary px-3 py-1 text-[10px]" onClick={() => { setOpen(c); setAmount(''); setNotes(''); setMethod('نقدًا'); setOtherMethod('') }}>تسوية</button>
               ),
             ],
           }
@@ -99,8 +103,17 @@ export default function Settlement() {
               <select className="field cursor-pointer" value={method} onChange={(e) => setMethod(e.target.value)}>
                 <option>نقدًا</option>
                 <option>تحويل بنكي</option>
-                <option>أخرى</option>
+                <OtherOption label="➕ أخرى — طريقة تسوية أخرى" />
               </select>
+              {isOther(method) && (
+                <OtherField
+                  label="طريقة التسوية"
+                  placeholder="مثال: cheque / حوالة خارجية"
+                  value={otherMethod}
+                  onChange={setOtherMethod}
+                  hint="تُحفظ مع سجل التسوية كما كتبتها."
+                />
+              )}
             </div>
             <textarea className="field min-h-16 resize-none" placeholder="ملاحظات (اختياري)" value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
@@ -108,7 +121,12 @@ export default function Settlement() {
             <button
               className="btn-primary flex-1"
               onClick={() => {
-                const next = [...rows.filter((r) => r.id !== open.id), { id: open.id, settled: true, amount, method, notes }]
+                const resolvedMethod = isOther(method) ? otherName(otherMethod) : method
+                if (isOther(method) && !resolvedMethod) {
+                  toast('اكتب طريقة التسوية')
+                  return
+                }
+                const next = [...rows.filter((r) => r.id !== open.id), { id: open.id, settled: true, amount, method: resolvedMethod, notes }]
                 setRows(next)
                 dbSet(`settle-${date}`, next)
                 logAudit({ action: 'أخرى', entity: open.name, details: `تسوية ${method}`, oldValue: 'لم تُسوَّ', newValue: 'مُسوَّى' })

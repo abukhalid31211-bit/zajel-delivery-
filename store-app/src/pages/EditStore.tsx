@@ -7,7 +7,7 @@ import OTPInput from '../components/OTPInput'
 import Countdown from '../components/Countdown'
 import { useToast } from '../components/Modal'
 import { useStore } from '../lib/StoreContext'
-import { BUSINESS_TYPES, OTHER_TYPE, zoneFor, isValidIraqiPhone } from '../lib/data'
+import { OTHER_TYPE, businessTypeOptions, rememberBusinessType, zoneFor, isValidIraqiPhone } from '../lib/data'
 import { LocationPicker, zoneRing, DEFAULT_CENTER } from '../lib/MapLib'
 
 const badgeInstant = <span className="badge bg-gold text-white">فوري</span>
@@ -21,11 +21,13 @@ export default function EditStore() {
   const [confirmLocation, setConfirmLocation] = useState(false)
   const [otpOpen, setOtpOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  /* أنواع النشاط: القائمة المعتمدة + ما أضافه المستخدم سابقاً عبر «أخرى» */
+  const [typeOptions] = useState(businessTypeOptions)
   const [form, setForm] = useState({
     name: profile?.name ?? '',
     type: (() => {
       const t = profile?.type ?? ''
-      return t && !BUSINESS_TYPES.includes(t) ? OTHER_TYPE : t
+      return t && !businessTypeOptions().includes(t) ? OTHER_TYPE : t
     })(),
     phone: profile?.phone ?? '',
     owner: profile?.owner ?? '',
@@ -33,7 +35,7 @@ export default function EditStore() {
   })
   const [customType, setCustomType] = useState(() => {
     const t = profile?.type ?? ''
-    return t && !BUSINESS_TYPES.includes(t) ? t : ''
+    return t && !businessTypeOptions().includes(t) ? t : ''
   })
   const [loc, setLoc] = useState(profile?.location ?? DEFAULT_CENTER)
   const [locMoved, setLocMoved] = useState(false)
@@ -46,6 +48,8 @@ export default function EditStore() {
       /* التعديلات البسيطة تُطبق فوراً */
       updateProfile({ name: form.name.trim() || profile?.name, address: form.address.trim() || profile?.address })
       /* التعديلات الحساسة تُرسل للمراجعة */
+      /* «أخرى»: نوع النشاط المكتوب يدوياً يُحفظ ليعيد الظهور في القائمة */
+      if (form.type === OTHER_TYPE) rememberBusinessType(customType)
       const resolvedType = form.type === OTHER_TYPE ? customType.trim() : form.type
       const sensitiveChanged = resolvedType !== profile?.type || form.owner !== profile?.owner || locMoved
       if (sensitiveChanged) {
@@ -138,12 +142,12 @@ export default function EditStore() {
             <option value="" disabled>
               اختر نوع النشاط
             </option>
-            {BUSINESS_TYPES.map((t) => (
+            {typeOptions.map((t) => (
               <option key={t} value={t}>
                 {t}
               </option>
             ))}
-            <option value={OTHER_TYPE}>{OTHER_TYPE}</option>
+            <option value={OTHER_TYPE}>{OTHER_TYPE} — نوع نشاط آخر</option>
           </select>
           {form.type === OTHER_TYPE && (
             <input
@@ -152,6 +156,9 @@ export default function EditStore() {
               value={customType}
               onChange={(e) => setCustomType(e.target.value)}
             />
+          )}
+          {form.type === OTHER_TYPE && (
+            <p className="mt-1 text-[10px] leading-relaxed text-faint">اكتب الاسم وسيُحفظ مع بياناتك ويظهر في هذه القائمة مرة أخرى.</p>
           )}
         </div>
         <div>

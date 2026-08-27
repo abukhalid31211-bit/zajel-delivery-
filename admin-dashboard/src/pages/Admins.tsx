@@ -9,6 +9,8 @@ import { useToast } from '../components/Toast'
 import { useDbList, logAudit, logSecurity, PERM_SECTIONS, PERM_ACTIONS } from '../lib/store'
 import { uid, formatDate } from '../lib/db'
 import { isIraqMobile, digitsOnly } from '../lib/validate'
+import OtherField, { OtherOption } from '../components/OtherOption'
+import { OTHER, ensureOtherDistrict, otherName } from '../lib/customOption'
 import type { AdminUser, District, Governorate } from '../lib/types'
 
 const roles = ['أدمن الكباتن', 'أدمن المحلات', 'أدمن محافظة', 'أدمن منطقة', 'أدمن التقارير', 'مخصص']
@@ -18,12 +20,16 @@ export default function Admins() {
   const tab = params.get('tab') === 'perms' ? 1 : 0
   const admins = useDbList<AdminUser>('admins')
   const govs = useDbList<Governorate>('governorates').items
-  const districts = useDbList<District>('districts').items
+  const districtsList = useDbList<District>('districts')
+  const districts = districtsList.items
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<AdminUser | null>(null)
   const [form, setForm] = useState({ name: '', phone: '', password: '', role: '' })
   const [perms, setPerms] = useState<Record<string, string[]>>({})
   const [govIds, setGovIds] = useState<string[]>([])
+  /* «أخرى»: اسم منطقة جديدة يكتبها المدير بدل اختيارها من القائمة */
+  const [pickOtherDistrict, setPickOtherDistrict] = useState(false)
+  const [otherDistrictName, setOtherDistrictName] = useState('')
   const [err, setErr] = useState('')
   const { toast, node } = useToast()
 
@@ -39,6 +45,11 @@ export default function Admins() {
     if (!isIraqMobile(form.phone)) return setErr('رقم الهاتف غير صالح')
     if (!form.password && !editing) return setErr('كلمة المرور مطلوبة')
     if (!form.role) return setErr('اختر الدور')
+    if (pickOtherDistrict) {
+      const nm = otherName(otherDistrictName)
+      if (!nm) return setErr('اكتب اسم المنطقة الجديدة')
+      ensureOtherDistrict(districts, districtsList.setItems, nm, govIds.length === 1 ? govIds[0] : '')
+    }
     if (editing) {
       admins.setItems((p) => p.map((x) => x.id === editing.id ? { ...x, ...form, phone: digitsOnly(form.phone), password: form.password || x.password, perms, govIds, districtIds: [] } : x))
       logAudit({ action: 'تعديل', entity: form.name, details: 'تعديل أدمن', oldValue: editing.role, newValue: form.role })
@@ -68,7 +79,7 @@ export default function Admins() {
       <PageHeader
         title="الأدمن والصلاحيات"
         subtitle="إدارة حسابات الأدمن الفرعيين ونظام الصلاحيات الدقيق (RBAC)"
-        actions={tab === 0 && <button className="btn-primary" onClick={() => { setEditing(null); setForm({ name: '', phone: '', password: '', role: '' }); setPerms({}); setGovIds([]); setErr(''); setOpen(true) }}>+ إضافة أدمن جديد</button>}
+        actions={tab === 0 && <button className="btn-primary" onClick={() => { setEditing(null); setForm({ name: '', phone: '', password: '', role: '' }); setPerms({}); setGovIds([]); setPickOtherDistrict(false); setOtherDistrictName(''); setErr(''); setOpen(true) }}>+ إضافة أدمن جديد</button>}
       />
 
       <div className="mb-5 flex flex-wrap gap-2">
@@ -187,9 +198,23 @@ export default function Admins() {
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-semibold">المناطق المسموحة</label>
-              <select className="field min-h-24 cursor-pointer" multiple>
+              <select
+                className="field min-h-24 cursor-pointer"
+                multiple
+                onChange={(e) => setPickOtherDistrict(Array.from(e.target.selectedOptions).some((o) => o.value === OTHER))}
+              >
                 {districts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                <OtherOption label="➕ أخرى — منطقة جديدة" />
               </select>
+              {pickOtherDistrict && (
+                <OtherField
+                  label="اسم المنطقة"
+                  placeholder="اكتب اسم المنطقة ثم احفظ لتُضاف للقائمة"
+                  value={otherDistrictName}
+                  onChange={setOtherDistrictName}
+                  hint="تُضاف إلى «المناطق والجغرافيا» وتظهر في كل قوائم المناطق."
+                />
+              )}
             </div>
           </div>
           {err && <p className="mt-2 text-[11px] font-medium">⚠ {err}</p>}

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check, Loader2, LocateFixed } from 'lucide-react'
 import { useStore } from '../lib/StoreContext'
-import { BUSINESS_TYPES, OTHER_TYPE, GOVERNORATES, zoneFor, isValidIraqiPhone } from '../lib/data'
+import { OTHER_TYPE, businessTypeOptions, rememberBusinessType, GOVERNORATES, zoneFor, isValidIraqiPhone } from '../lib/data'
 import { LocationPicker, DEFAULT_CENTER, zoneRing } from '../lib/MapLib'
 import Stepper from '../components/Stepper'
 import type { LatLng } from '../lib/data'
@@ -13,13 +13,15 @@ export default function Register() {
   const isResubmit = profile?.status === 'rejected'
 
   const [step, setStep] = useState(1)
+  /* أنواع النشاط: القائمة المعتمدة + ما أضافه المستخدم سابقاً عبر «أخرى» */
+  const [typeOptions] = useState(businessTypeOptions)
   const [type, setType] = useState(() => {
     const t = profile?.type ?? ''
-    return t && !BUSINESS_TYPES.includes(t) ? OTHER_TYPE : t
+    return t && !businessTypeOptions().includes(t) ? OTHER_TYPE : t
   })
   const [customType, setCustomType] = useState(() => {
     const t = profile?.type ?? ''
-    return t && !BUSINESS_TYPES.includes(t) ? t : ''
+    return t && !businessTypeOptions().includes(t) ? t : ''
   })
   const [pinned, setPinned] = useState<LatLng | null>(profile?.location ?? null)
   const [loading, setLoading] = useState(false)
@@ -71,6 +73,8 @@ export default function Register() {
 
   const submit = () => {
     setLoading(true)
+    /* «أخرى»: نوع النشاط المكتوب يدوياً يُحفظ ليعيد الظهور في القائمة */
+    if (type === OTHER_TYPE) rememberBusinessType(customType)
     const data = {
       name: form.name.trim(),
       type: type === OTHER_TYPE ? customType.trim() : type,
@@ -140,12 +144,12 @@ export default function Register() {
                 <option value="" disabled>
                   اختر نوع النشاط
                 </option>
-                {BUSINESS_TYPES.map((t) => (
+                {typeOptions.map((t) => (
                   <option key={t} value={t}>
                     {t}
                   </option>
                 ))}
-                <option value={OTHER_TYPE}>{OTHER_TYPE}</option>
+                <option value={OTHER_TYPE}>{OTHER_TYPE} — نوع نشاط آخر</option>
               </select>
               {type === OTHER_TYPE && (
                 <input
@@ -161,6 +165,9 @@ export default function Register() {
                     })
                   }}
                 />
+              )}
+              {type === OTHER_TYPE && (
+                <p className="mt-1 text-[10px] leading-relaxed text-faint">اكتب الاسم وسيُحفظ مع طلبك ويظهر في هذه القائمة مرة أخرى.</p>
               )}
               {errors.type && <p className="mt-1 text-[11px] font-bold text-danger">⚠ {errors.type}</p>}
             </div>

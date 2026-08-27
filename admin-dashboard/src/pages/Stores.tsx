@@ -11,6 +11,8 @@ import { useToast } from '../components/Toast'
 import { useDbList, logAudit, STORE_TYPES } from '../lib/store'
 import { formatDate, uid, nowIso } from '../lib/db'
 import { can, inGeoScope } from '../lib/rbac'
+import OtherField, { OtherOption } from '../components/OtherOption'
+import { ensureOtherDistrict, isOther, otherName } from '../lib/customOption'
 import type { District, Governorate, OrderItem, StoreChange, StoreItem } from '../lib/types'
 
 const tabKeys = ['list', 'pending', 'changes']
@@ -28,6 +30,9 @@ export default function Stores() {
   const [reason, setReason] = useState('')
   const [add, setAdd] = useState(false)
   const [form, setForm] = useState({ name: '', type: STORE_TYPES[0], phone: '', owner: '', address: '', govId: '', districtId: '' })
+  /* «أخرى»: الاسم المكتوب يدوياً لنوع النشاط أو للمنطقة الجديدة */
+  const [otherType, setOtherType] = useState('')
+  const [otherDistrictName, setOtherDistrictName] = useState('')
   const { toast, node } = useToast()
   const [filters, setFilters] = useState<Filters>(emptyFilters())
   const [loading, setLoading] = useState(false)
@@ -56,7 +61,9 @@ export default function Stores() {
         actions={
           <>
             <button className="btn-ghost" onClick={() => navigate('/stores/profile')}>👁️ معاينة ملف المحل</button>
-            {can('المحلات', 'إضافة') && <button className="btn-primary" onClick={() => setAdd(true)}>+ تسجيل محل يدوياً</button>}
+            {can('المحلات', 'إضافة') && (
+              <button className="btn-primary" onClick={() => { setAdd(true); setOtherType(''); setOtherDistrictName('') }}>+ تسجيل محل يدوياً</button>
+            )}
           </>
         }
       />
@@ -201,9 +208,20 @@ export default function Stores() {
         <Modal title="تسجيل محل يدوياً" onClose={() => setAdd(false)} wide>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <input className="field" placeholder="اسم المحل" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            <select className="field cursor-pointer" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-              {STORE_TYPES.map((t) => <option key={t}>{t}</option>)}
-            </select>
+            <div>
+              <select className="field cursor-pointer" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+                {STORE_TYPES.map((t) => <option key={t}>{t}</option>)}
+                <OtherOption label="➕ أخرى — نوع نشاط آخر" />
+              </select>
+              {isOther(form.type) && (
+                <OtherField
+                  label="اسم نوع النشاط"
+                  placeholder="مثال: متجر هواتف"
+                  value={otherType}
+                  onChange={setOtherType}
+                />
+              )}
+            </div>
             <input className="field" placeholder="رقم الهاتف" dir="ltr" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
             <input className="field" placeholder="اسم صاحب المحل" value={form.owner} onChange={(e) => setForm({ ...form, owner: e.target.value })} />
             <input className="field sm:col-span-2" placeholder="العنوان التفصيلي" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
@@ -211,17 +229,37 @@ export default function Stores() {
               <option value="">المحافظة</option>
               {govs.items.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
             </select>
-            <select className="field cursor-pointer" value={form.districtId} onChange={(e) => setForm({ ...form, districtId: e.target.value })}>
-              <option value="">المنطقة</option>
-              {districts.items.filter((d) => !form.govId || d.govId === form.govId).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-            </select>
+            <div>
+              <select className="field cursor-pointer" value={form.districtId} onChange={(e) => setForm({ ...form, districtId: e.target.value })}>
+                <option value="">المنطقة</option>
+                {districts.items.filter((d) => !form.govId || d.govId === form.govId).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                <OtherOption label="➕ أخرى — منطقة جديدة" />
+              </select>
+              {isOther(form.districtId) && (
+                <OtherField
+                  label="اسم المنطقة"
+                  placeholder="اكتب اسم المنطقة لحفظها واختيارها"
+                  value={otherDistrictName}
+                  onChange={setOtherDistrictName}
+                  hint="تُحفظ في «المناطق والجغرافيا» ضمن المحافظة المختارة وتظهر في القوائم مرة أخرى."
+                />
+              )}
+            </div>
           </div>
           <div className="mt-4 flex gap-2">
             <button
               className="btn-primary flex-1"
               disabled={!form.name.trim()}
               onClick={() => {
-                stores.setItems((p) => [...p, { id: uid(), ...form, status: 'بانتظار الموافقة', createdAt: nowIso() }])
+                if (isOther(form.type) && !otherName(otherType)) return toast('اكتب اسم نوع النشاط')
+                let districtId = form.districtId
+                if (isOther(form.districtId)) {
+                  if (!form.govId) return toast('اختر المحافظة أولاً لحفظ المنطقة الجديدة فيها')
+                  const id = ensureOtherDistrict(districts.items, districts.setItems, otherDistrictName, form.govId)
+                  if (!id) return toast('اكتب اسم المنطقة')
+                  districtId = id
+                }
+                stores.setItems((p) => [...p, { id: uid(), ...form, type: isOther(form.type) ? otherName(otherType) : form.type, districtId, status: 'بانتظار الموافقة', createdAt: nowIso() }])
                 setAdd(false)
                 toast('تم إنشاء طلب تسجيل المحل')
               }}

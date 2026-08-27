@@ -6,7 +6,9 @@ import { useToast } from '../components/Toast'
 import { useCaptain } from '../state'
 
 const steps = ['قبول', 'متوجه للمحل', 'وصل المحل', 'استلام', 'بالطريق', 'تسليم']
-const cancelReasons = ['تعطل الدراجة', 'حادث', 'الزبون لا يرد', 'العنوان خاطئ', 'المحل ألغى', 'أخرى']
+/** خيار «أخرى» في آخر قائمة أسباب الإلغاء — يفتح حقل كتابة ويُحفظ السبب كما يُكتب */
+const OTHER_REASON = 'أخرى'
+const cancelReasons = ['تعطل الدراجة', 'حادث', 'الزبون لا يرد', 'العنوان خاطئ', 'المحل ألغى', OTHER_REASON]
 
 export default function Order() {
   const navigate = useNavigate()
@@ -19,6 +21,8 @@ export default function Order() {
   const [photoTaken, setPhotoTaken] = useState(false)
   const [pickupImage, setPickupImage] = useState<string | null>(null)
   const [cancelReason, setCancelReason] = useState('')
+  /* «أخرى»: سبب الإلغاء المكتوب يدوياً */
+  const [otherReason, setOtherReason] = useState('')
   const [cancelDetails, setCancelDetails] = useState('')
 
   const stage = order?.stage || 'toShop'
@@ -229,11 +233,27 @@ export default function Order() {
               <option value="" disabled>اختر السبب</option>
               {cancelReasons.map((r) => <option key={r}>{r}</option>)}
             </select>
+            {cancelReason === OTHER_REASON && (
+              <>
+                <input className="field" placeholder="اكتب سبب الإلغاء" value={otherReason} onChange={(e) => setOtherReason(e.target.value)} />
+                <p className="text-[10px] leading-relaxed text-mute">اكتب السبب وسيُحفظ كما كتبته في سجل الطلب وإشعار الإدارة.</p>
+              </>
+            )}
             <textarea className="field min-h-16 resize-none" value={cancelDetails} onChange={(e) => setCancelDetails(e.target.value)} />
             <p className="rounded-xl border border-dashed border-gold px-3 py-2 text-[10px] font-semibold">⚠️ إلغاء الطلبات المتكرر قد يؤثر على تقييمك.</p>
           </div>
           <div className="mt-4 flex gap-2">
-            <button className="btn-primary flex-1" disabled={!cancelReason} onClick={() => { cancelOrder(order.id, cancelReason, cancelDetails); setModal(null); navigate('/home') }}>تأكيد الإلغاء</button>
+            <button className="btn-primary flex-1" disabled={!cancelReason} onClick={() => {
+              const reason = cancelReason === OTHER_REASON ? otherReason.trim() : cancelReason
+              if (cancelReason === OTHER_REASON && !reason) {
+                toast('اكتب سبب الإلغاء أولاً')
+                return
+              }
+              cancelOrder(order.id, reason, cancelDetails)
+              setModal(null)
+              setOtherReason('')
+              navigate('/home')
+            }}>تأكيد الإلغاء</button>
             <button className="btn-secondary flex-1" onClick={() => setModal(null)}>رجوع</button>
           </div>
         </Modal>

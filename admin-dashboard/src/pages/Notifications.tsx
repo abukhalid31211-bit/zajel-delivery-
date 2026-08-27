@@ -9,6 +9,8 @@ import { useToast } from '../components/Toast'
 import { useDbList, logAudit } from '../lib/store'
 import { uid, nowIso, formatDate } from '../lib/db'
 import { getSession } from '../lib/session'
+import OtherField, { OtherOption } from '../components/OtherOption'
+import { ensureOtherDistrict, isOther } from '../lib/customOption'
 import type { Captain, Governorate, SentNotification, StoreItem, District } from '../lib/types'
 
 const audiences = ['جميع الكباتن', 'جميع المحلات', 'كابتن محدد', 'محل محدد', 'مجموعة محددة', 'كباتن محافظة معينة', 'كباتن منطقة معينة']
@@ -20,8 +22,10 @@ export default function Notifications() {
   const captains = useDbList<Captain>('captains').items
   const stores = useDbList<StoreItem>('stores').items
   const govs = useDbList<Governorate>('governorates').items
-  const districts = useDbList<District>('districts').items
+  const districtsList = useDbList<District>('districts')
+  const districts = districtsList.items
   const [audience, setAudience] = useState('')
+  const [otherDistrictName, setOtherDistrictName] = useState('')
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [priority, setPriority] = useState('عادي')
@@ -39,6 +43,15 @@ export default function Notifications() {
   })()
 
   const send = () => {
+    if (isOther(target)) {
+      const id = ensureOtherDistrict(districts, districtsList.setItems, otherDistrictName, '')
+      if (!id) {
+        toast('اكتب اسم المنطقة الجديدة')
+        return
+      }
+      setTarget(id)
+      setOtherDistrictName('')
+    }
     const item: SentNotification = {
       id: uid(),
       title,
@@ -84,7 +97,7 @@ export default function Notifications() {
         <div className="card max-w-2xl space-y-4 p-6">
           <div>
             <label className="mb-1.5 block text-xs font-semibold">المرسل إليه</label>
-            <select className="field cursor-pointer" value={audience} onChange={(e) => { setAudience(e.target.value); setTarget('') }}>
+            <select className="field cursor-pointer" value={audience} onChange={(e) => { setAudience(e.target.value); setTarget(''); setOtherDistrictName('') }}>
               <option value="">اختر الفئة المستهدفة</option>
               {audiences.map((a) => <option key={a}>{a}</option>)}
             </select>
@@ -114,10 +127,22 @@ export default function Notifications() {
             </select>
           )}
           {audience === 'كباتن منطقة معينة' && (
-            <select className="field cursor-pointer" value={target} onChange={(e) => setTarget(e.target.value)}>
-              <option value="">اختر المنطقة</option>
-              {districts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-            </select>
+            <div>
+              <select className="field cursor-pointer" value={target} onChange={(e) => setTarget(e.target.value)}>
+                <option value="">اختر المنطقة</option>
+                {districts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                <OtherOption label="➕ أخرى — منطقة جديدة" />
+              </select>
+              {isOther(target) && (
+                <OtherField
+                  label="اسم المنطقة"
+                  placeholder="اكتب اسم المنطقة لحفظها واختيارها"
+                  value={otherDistrictName}
+                  onChange={setOtherDistrictName}
+                  hint="تُحفظ في «المناطق والجغرافيا» وتظهر في قوائم المنطقة مرة أخرى."
+                />
+              )}
+            </div>
           )}
           <div>
             <label className="mb-1.5 block text-xs font-semibold">عنوان الإشعار</label>

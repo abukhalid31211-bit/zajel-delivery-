@@ -14,6 +14,8 @@ import { uid, nowIso, formatDate } from '../lib/db'
 import { can, inGeoScope } from '../lib/rbac'
 import { ACTIVE_STATUSES, isStuck, shouldAutoCancel, waitMinutes } from '../lib/orders'
 import { overrideFor } from '../lib/pricing'
+import OtherField, { OtherOption } from '../components/OtherOption'
+import { ensureOtherDistrict, isOther, otherName } from '../lib/customOption'
 import type { Captain, District, Governorate, OrderItem, StoreItem } from '../lib/types'
 
 const tabs = [
@@ -37,11 +39,14 @@ export default function Orders() {
   const stores = useDbList<StoreItem>('stores').items.filter((s) => s.status === 'نشط' || s.status === 'بانتظار الموافقة')
   const captains = useDbList<Captain>('captains').items
   const govs = useDbList<Governorate>('governorates').items
-  const districts = useDbList<District>('districts').items
+  const districtsList = useDbList<District>('districts')
+  const districts = districtsList.items
   const [filters, setFilters] = useState<Filters>(emptyFilters())
   const [loading, setLoading] = useState(false)
   const [tick, setTick] = useState(0)
   const [create, setCreate] = useState(false)
+  /* «أخرى»: اسم المنطقة الجديد الذي يكتبه المدير داخل نموذج الطلب */
+  const [otherDistrictName, setOtherDistrictName] = useState('')
   const [form, setForm] = useState(() => {
     try {
       return JSON.parse(sessionStorage.getItem(DRAFT) || 'null') || {
@@ -117,7 +122,14 @@ export default function Orders() {
     const store = stores.find((s) => s.id === form.storeId)
     if (!store) return toast('اختر محلاً')
     if (!form.customerName.trim()) return toast('اسم الزبون مطلوب')
-    const dist = districts.find((d) => d.id === form.districtId)
+    let districtId = form.districtId
+    let districtName = districts.find((d) => d.id === form.districtId)?.name || '—'
+    if (isOther(form.districtId)) {
+      const id = ensureOtherDistrict(districts, districtsList.setItems, otherDistrictName, store.govId)
+      if (!id) return toast('اكتب اسم المنطقة الجديدة')
+      districtId = id
+      districtName = otherName(otherDistrictName)
+    }
     const offset = Number(form.waitOffset || 0)
     const waitingStartedAt = form.status === 'بانتظار كابتن' ? new Date(Date.now() - offset * 60000).toISOString() : undefined
     const number = `Z${String(orders.items.length + 1).padStart(4, '0')}`
@@ -129,8 +141,8 @@ export default function Orders() {
       customerName: form.customerName.trim(),
       customerPhone: form.customerPhone,
       govId: store.govId,
-      districtId: form.districtId,
-      districtName: dist?.name || '—',
+      districtId,
+      districtName,
       captainId: '',
       captainName: '',
       status: form.status,
@@ -157,7 +169,7 @@ export default function Orders() {
         subtitle="مراقبة وإدارة جميع طلبيات التوصيل في النظام لحظة بلحظة"
         actions={
           can('الطلبيات', 'إضافة') && !settings.maintenance ? (
-            <button className="btn-primary" onClick={() => setCreate(true)}>
+            <button className="btn-primary" onClick={() => { setCreate(true); setOtherDistrictName('') }}>
               <Plus className="h-4 w-4" /> إنشاء طلب
             </button>
           ) : undefined
@@ -272,12 +284,24 @@ export default function Orders() {
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
-            <select className="field cursor-pointer" value={form.districtId} onChange={(e) => saveDraft({ ...form, districtId: e.target.value })}>
-              <option value="">{districts.length ? 'المنطقة' : 'أضف منطقة أولاً'}</option>
-              {districts.map((d) => (
-                <option key={d.id} value={d.id}>{d.name}</option>
-              ))}
-            </select>
+            <div>
+              <select className="field cursor-pointer" value={form.districtId} onChange={(e) => saveDraft({ ...form, districtId: e.target.value })}>
+                <option value="">{districts.length ? 'المنطقة' : 'أضف منطقة أولاً'}</option>
+                {districts.map((d) => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+                <OtherOption label="➕ أخرى — منطقة جديدة" />
+              </select>
+              {isOther(form.districtId) && (
+                <OtherField
+                  label="اسم المنطقة"
+                  placeholder="اكتب اسم المنطقة لحفظها واختيارها"
+                  value={otherDistrictName}
+                  onChange={setOtherDistrictName}
+                  hint="تُحفظ في «المناطق والجغرافيا» ضمن محافظة المحل وتظهر في القوائم مرة أخرى."
+                />
+              )}
+            </div>
             <input className="field" placeholder="اسم الزبون" value={form.customerName} onChange={(e) => saveDraft({ ...form, customerName: e.target.value })} />
             <input className="field" dir="ltr" placeholder="هاتف الزبون" value={form.customerPhone} onChange={(e) => saveDraft({ ...form, customerPhone: e.target.value })} />
             <input className="field" placeholder="قيمة الطلب (د.ع)" value={form.value} onChange={(e) => saveDraft({ ...form, value: e.target.value.replace(/[^\d]/g, '') })} />

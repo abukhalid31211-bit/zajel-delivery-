@@ -8,7 +8,7 @@ import Countdown from '../components/Countdown'
 import { useStore } from '../lib/StoreContext'
 import {
   ORDER_STAGES, STATUS_META, CANCEL_REASONS, editableFields, canEditOrder, canCancelOrder,
-  fmtTime, fmtRelative, distanceKm, etaMin, minutesBetween,
+  isOther, fmtTime, fmtRelative, distanceKm, etaMin, minutesBetween,
 } from '../lib/data'
 import { MapView, captainPosFor, type MapMarker } from '../lib/MapLib'
 
@@ -22,6 +22,8 @@ export default function Track() {
 
   const [modal, setModal] = useState<'cancel' | 'edit' | 'return' | null>(null)
   const [reason, setReason] = useState('')
+  /* «أخرى»: سبب الإلغاء المكتوب يدوياً */
+  const [otherReason, setOtherReason] = useState('')
   const [detail, setDetail] = useState('')
   const [editForm, setEditForm] = useState<Record<string, string>>({})
 
@@ -326,6 +328,17 @@ export default function Track() {
                 <option key={r}>{r}</option>
               ))}
             </select>
+            {isOther(reason) && (
+              <>
+                <input
+                  className="field"
+                  placeholder="اكتب سبب الإلغاء"
+                  value={otherReason}
+                  onChange={(e) => setOtherReason(e.target.value)}
+                />
+                <p className="text-[10px] leading-relaxed text-faint">يُحفظ السبب كما تكتبه في سجل الطلب وإشعار الإدارة.</p>
+              </>
+            )}
             <textarea className="field min-h-16 resize-none" placeholder="تفاصيل (اختياري)" value={detail} onChange={(e) => setDetail(e.target.value)} />
             <p className="rounded-xl border border-dashed border-gold bg-gold-faint px-3 py-2 text-[10px] font-bold text-gold-deep">
               ⚠️ إذا كان الكابتن قد استلم الطلب، لا يمكن الإلغاء — تواصل مع الإدارة.
@@ -336,8 +349,14 @@ export default function Track() {
               className="btn-primary flex-1"
               disabled={!reason}
               onClick={() => {
-                const res = cancelOrder(order.id, reason, detail)
+                const resolvedReason = isOther(reason) ? otherReason.trim() : reason
+                if (isOther(reason) && !resolvedReason) {
+                  toast('اكتب سبب الإلغاء أولاً', 'error')
+                  return
+                }
+                const res = cancelOrder(order.id, resolvedReason, detail)
                 setModal(null)
+                setOtherReason('')
                 if (!res.ok) toast(res.error ?? 'تعذر الإلغاء', 'error')
                 else {
                   toast('تم إلغاء الطلب وإشعار الكابتن ✅')

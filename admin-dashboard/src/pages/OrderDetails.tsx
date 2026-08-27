@@ -10,6 +10,8 @@ import { logAudit, useDbList } from '../lib/store'
 import { formatDate, nowIso } from '../lib/db'
 import { can } from '../lib/rbac'
 import { waitMinutes } from '../lib/orders'
+import OtherField, { OtherOption } from '../components/OtherOption'
+import { OTHER, isOther, otherName } from '../lib/customOption'
 import type { Captain, OrderItem } from '../lib/types'
 
 const stages = ['طلب جديد', 'انتظار كابتن', 'قبول', 'متوجه', 'وصل المحل', 'استلام', 'بالطريق', 'تسليم', 'مكتمل']
@@ -40,6 +42,8 @@ export default function OrderDetails() {
   const [assignMode, setAssignMode] = useState<'auto' | 'manual'>('auto')
   const [reason, setReason] = useState('')
   const [cancelReason, setCancelReason] = useState('')
+  /* «أخرى»: سبب إلغاء يكتبه المدير يدوياً */
+  const [otherCancelReason, setOtherCancelReason] = useState('')
   const [captainId, setCaptainId] = useState('')
   const settings = getSettings()
   const idx = order ? stageIndex(order.status) : 0
@@ -215,19 +219,35 @@ export default function OrderDetails() {
           <select className="field mt-4 cursor-pointer" value={cancelReason} onChange={(e) => setCancelReason(e.target.value)}>
             <option value="">سبب الإلغاء</option>
             {settings.cancelReasons.map((r) => <option key={r}>{r}</option>)}
+            {!settings.cancelReasons.includes(OTHER) && <OtherOption label="➕ أخرى — سبب آخر" />}
           </select>
+          {isOther(cancelReason) && (
+            <OtherField
+              label="سبب الإلغاء"
+              placeholder="اكتب السبب ليُحفظ في سجل الطلب"
+              value={otherCancelReason}
+              onChange={setOtherCancelReason}
+              hint="يظهر النص كما كتبته في سجل الطلبيات وسجل العمليات."
+            />
+          )}
           <div className="mt-4 flex gap-2">
             <button
               className="btn-primary flex-1"
               disabled={settings.cancelRequireReason && !cancelReason}
               onClick={() => {
+                const reasonText = isOther(cancelReason) ? otherName(otherCancelReason) : cancelReason
+                if (isOther(cancelReason) && !reasonText) {
+                  toast('اكتب سبب الإلغاء')
+                  return
+                }
                 patch((o) => ({
                   ...o,
                   status: 'ملغي',
-                  timeline: [...o.timeline, { at: nowIso(), text: `أُلغي بواسطة الإدارة — ${cancelReason}` }],
+                  timeline: [...o.timeline, { at: nowIso(), text: `أُلغي بواسطة الإدارة — ${reasonText}` }],
                 }))
-                logAudit({ action: 'إلغاء طلب', entity: order.number, details: cancelReason, oldValue: order.status, newValue: 'ملغي' })
+                logAudit({ action: 'إلغاء طلب', entity: order.number, details: reasonText, oldValue: order.status, newValue: 'ملغي' })
                 setModal(null)
+                setOtherCancelReason('')
                 toast('تم إلغاء الطلب')
               }}
             >

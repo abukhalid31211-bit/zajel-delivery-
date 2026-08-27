@@ -9,6 +9,8 @@ import StatusBadge from '../components/StatusBadge'
 import MapCanvas from '../components/MapCanvas'
 import { useToast } from '../components/Toast'
 import { useDbList, logAudit } from '../lib/store'
+import OtherField, { OtherOption } from '../components/OtherOption'
+import { ensureOtherDistrict, isOther, otherName } from '../lib/customOption'
 import { uid } from '../lib/db'
 import type { District, Governorate } from '../lib/types'
 
@@ -29,6 +31,8 @@ export default function Zones() {
   const [govFilter, setGovFilter] = useState('')
   const [geoId, setGeoId] = useState('')
   const [geoGovId, setGeoGovId] = useState('')
+  /* «أخرى»: اسم منطقة جديدة تُرسم حدودها مباشرة */
+  const [otherGeoName, setOtherGeoName] = useState('')
   const [err, setErr] = useState('')
   const { toast, node } = useToast()
 
@@ -52,6 +56,19 @@ export default function Zones() {
     setName('')
     setErr('')
     toast('تم تحديث حالة المحافظة بنجاح')
+  }
+
+  /* إضافة منطقة جديدة من خيار «أخرى» داخل تبويب رسم الحدود واختيارها للرسم */
+  const addOtherGeoDistrict = () => {
+    const nm = otherName(otherGeoName)
+    if (!nm) return toast('اكتب اسم المنطقة أولاً')
+    if (!geoGovId) return toast('اختر المحافظة أولاً لحفظ المنطقة الجديدة فيها')
+    if (districts.items.some((d) => d.govId === geoGovId && d.name === nm)) return toast('هذه المنطقة موجودة بالفعل في نفس المحافظة')
+    const id = ensureOtherDistrict(districts.items, districts.setItems, nm, geoGovId)
+    if (!id) return
+    setGeoId(id)
+    setOtherGeoName('')
+    toast('تمت إضافة المنطقة — ارسم حدودها على الخريطة')
   }
 
   const saveDistrict = () => {
@@ -213,7 +230,20 @@ export default function Zones() {
               {geoDistricts.map((d) => (
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
+              <OtherOption label="➕ أخرى — منطقة جديدة" />
             </select>
+            {isOther(geoId) && (
+              <div className="w-full">
+                <OtherField
+                  label="اسم المنطقة"
+                  placeholder="اكتب اسم المنطقة لإضافتها واختيارها للرسم"
+                  value={otherGeoName}
+                  onChange={setOtherGeoName}
+                  hint="تُحفظ في قائمة المناطق ضمن المحافظة المختارة وتظهر في كل القوائم."
+                />
+                <button className="btn-secondary mt-2 text-xs" onClick={addOtherGeoDistrict}>＋ إضافة المنطقة واختيارها</button>
+              </div>
+            )}
             <button
               className="btn-primary"
               disabled={!geoDistrict}

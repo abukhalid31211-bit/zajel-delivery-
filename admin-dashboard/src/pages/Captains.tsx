@@ -12,6 +12,9 @@ import EmptyState from '../components/EmptyState'
 import Toggle from '../components/Toggle'
 import { useToast } from '../components/Toast'
 import { useDbList, logAudit, VEHICLES } from '../lib/store'
+import { getSettings, saveSettings } from '../lib/settings'
+import OtherField, { OtherOption } from '../components/OtherOption'
+import { ensureOtherShift, isOther, otherName } from '../lib/customOption'
 import { uid, nowIso, formatDate } from '../lib/db'
 import { isIraqMobile, digitsOnly } from '../lib/validate'
 import { can, inGeoScope } from '../lib/rbac'
@@ -37,6 +40,11 @@ export default function Captains() {
   const [week, setWeek] = useState('الحالي')
   const [drawer, setDrawer] = useState<Shift | null>(null)
   const [form, setForm] = useState({ name: '', phone: '', email: '', govId: '', vehicle: VEHICLES[0], shiftId: '' })
+  /* «أخرى»: مركبة باسم حرّ، وشفت جديد يُضاف لقائمة الشفتات */
+  const [otherVehicle, setOtherVehicle] = useState('')
+  const [otherShiftName, setOtherShiftName] = useState('')
+  const [otherShiftStart, setOtherShiftStart] = useState('08:00')
+  const [otherShiftEnd, setOtherShiftEnd] = useState('16:00')
   const [err, setErr] = useState('')
   const [reject, setReject] = useState<Captain | null>(null)
   const [reason, setReason] = useState('')
@@ -85,7 +93,9 @@ export default function Captains() {
         actions={
           <>
             <button className="btn-ghost" onClick={() => navigate('/captains/profile')}>👁️ معاينة ملف الكابتن</button>
-            {can('الكباتن', 'إضافة') && <button className="btn-primary" onClick={() => { setAddCap(true); setErr('') }}>+ إضافة كابتن يدوياً</button>}
+            {can('الكباتن', 'إضافة') && (
+              <button className="btn-primary" onClick={() => { setAddCap(true); setErr(''); setOtherVehicle(''); setOtherShiftName('') }}>+ إضافة كابتن يدوياً</button>
+            )}
           </>
         }
       />
@@ -323,14 +333,42 @@ export default function Captains() {
               <label className="mb-1.5 block text-xs font-semibold">نوع المركبة</label>
               <select className="field cursor-pointer" value={form.vehicle} onChange={(e) => setForm({ ...form, vehicle: e.target.value })}>
                 {VEHICLES.map((v) => <option key={v}>{v}</option>)}
+                <OtherOption label="➕ أخرى — نوع مركبة آخر" />
               </select>
+              {isOther(form.vehicle) && (
+                <OtherField
+                  label="اسم نوع المركبة"
+                  placeholder="مثال: توكتوك 🛺"
+                  value={otherVehicle}
+                  onChange={setOtherVehicle}
+                  hint="يُحفظ مع حساب الكابتن ويُضاف إلى «أنواع المركبات» في الإعدادات."
+                />
+              )}
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-semibold">الشفت</label>
               <select className="field cursor-pointer" value={form.shiftId} onChange={(e) => setForm({ ...form, shiftId: e.target.value })}>
                 <option value="">بدون</option>
                 {shifts.items.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                <OtherOption label="➕ أخرى — شفت جديد" />
               </select>
+              {isOther(form.shiftId) && (
+                <div className="mt-2 rounded-xl border border-dashed border-black bg-page/70 p-3">
+                  <label className="mb-1.5 block text-[11px] font-semibold">اسم الشفت الجديد</label>
+                  <input className="field" placeholder="مثال: شفت المساء" value={otherShiftName} onChange={(e) => setOtherShiftName(e.target.value)} />
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="mb-1 block text-[10px] font-semibold text-mute">وقت البداية</label>
+                      <input type="time" className="field cursor-pointer" value={otherShiftStart} onChange={(e) => setOtherShiftStart(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[10px] font-semibold text-mute">وقت النهاية</label>
+                      <input type="time" className="field cursor-pointer" value={otherShiftEnd} onChange={(e) => setOtherShiftEnd(e.target.value)} />
+                    </div>
+                  </div>
+                  <p className="mt-1.5 text-[10px] leading-relaxed text-faint">يُضاف الشفت إلى «شفتات العمل» ويُسنّد للكابتن مباشرة.</p>
+                </div>
+              )}
             </div>
           </div>
           {err && <p className="mt-2 text-[11px] font-medium">⚠ {err}</p>}
@@ -340,6 +378,23 @@ export default function Captains() {
               onClick={() => {
                 if (!form.name.trim()) return setErr('الاسم مطلوب')
                 if (!isIraqMobile(form.phone)) return setErr('رقم الهاتف غير صالح')
+                let vehicle = form.vehicle
+                if (isOther(vehicle)) {
+                  const v = otherName(otherVehicle)
+                  if (!v) return setErr('اكتب اسم نوع المركبة')
+                  vehicle = v
+                  const st = getSettings()
+                  if (!st.vehicleTypes.includes(v)) {
+                    saveSettings({ ...st, vehicleTypes: [...st.vehicleTypes, v] })
+                    logAudit({ action: 'تغيير إعداد', entity: 'أنواع المركبات', details: `${v} — عبر خيار «أخرى»`, oldValue: '—', newValue: v })
+                  }
+                }
+                let shiftId = form.shiftId
+                if (isOther(shiftId)) {
+                  const id = ensureOtherShift(shifts.items, shifts.setItems, otherShiftName, otherShiftStart, otherShiftEnd)
+                  if (!id) return setErr('اكتب اسم الشفت الجديد')
+                  shiftId = id
+                }
                 captains.setItems((p) => [
                   ...p,
                   {
@@ -349,8 +404,8 @@ export default function Captains() {
                     email: form.email,
                     govId: form.govId,
                     districtIds: [],
-                    shiftId: form.shiftId,
-                    vehicle: form.vehicle,
+                    shiftId,
+                    vehicle,
                     status: 'بانتظار الموافقة',
                     rating: '—',
                     createdAt: nowIso(),
@@ -359,6 +414,8 @@ export default function Captains() {
                 logAudit({ action: 'إضافة', entity: form.name, details: 'إضافة كابتن يدوياً', oldValue: '—', newValue: 'بانتظار الموافقة' })
                 setAddCap(false)
                 setForm({ name: '', phone: '', email: '', govId: '', vehicle: VEHICLES[0], shiftId: '' })
+                setOtherVehicle('')
+                setOtherShiftName('')
                 toast('تم إنشاء حساب الكابتن بانتظار الموافقة')
               }}
             >
