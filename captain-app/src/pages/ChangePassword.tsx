@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Eye, EyeOff, Loader2, CheckCircle2 } from 'lucide-react'
+import { useCaptain } from '../state'
 
 export default function ChangePassword() {
   const navigate = useNavigate()
+  const { changePassword } = useCaptain()
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -22,6 +24,12 @@ export default function ChangePassword() {
     setError('')
     setLoading(true)
     setTimeout(() => {
+      const ok = changePassword(current, next)
+      if (!ok) {
+        setLoading(false)
+        setError('كلمة المرور الحالية غير صحيحة')
+        return
+      }
       setLoading(false)
       setDone(true)
     }, 900)

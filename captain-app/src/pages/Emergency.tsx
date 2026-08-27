@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Siren, MapPin, Clock, Hash } from 'lucide-react'
 import Modal from '../components/Modal'
 import { useToast } from '../components/Toast'
+import { useCaptain } from '../state'
 
 export default function Emergency() {
   const navigate = useNavigate()
   const { toast, node } = useToast()
+  const { sendEmergency } = useCaptain()
   const [confirm, setConfirm] = useState(false)
   const [desc, setDesc] = useState('')
 
@@ -33,7 +35,7 @@ export default function Emergency() {
         <div className="card divide-y divide-line">
           <p className="px-4 py-3 text-xs font-bold">معلومات تُرسل تلقائياً</p>
           {[
-            { icon: Hash, label: 'رقم الطلب الحالي', value: '#—' },
+            { icon: Hash, label: 'رقم الطلب الحالي', value: 'يُحدد تلقائياً عند الإنذار' },
             { icon: MapPin, label: 'موقعك الحالي (GPS)', value: 'يُرسل تلقائياً' },
             { icon: Clock, label: 'وقت التنبيه', value: 'لحظة الإرسال' },
           ].map((r) => (
@@ -47,7 +49,7 @@ export default function Emergency() {
 
         <div>
           <label className="mb-1.5 block text-xs font-semibold">وصف المشكلة (اختياري)</label>
-          <textarea className="field min-h-24 resize-none" placeholder="مثال: حادث، تعطل المركبة، موقف خطر..." value={desc} onChange={(e) => setDesc(e.target.value)} />
+          <textarea className="field min-h-24 resize-none" value={desc} onChange={(e) => setDesc(e.target.value)} />
         </div>
       </div>
 
@@ -70,6 +72,7 @@ export default function Emergency() {
               className="btn-primary flex-1"
               onClick={() => {
                 setConfirm(false)
+                sendEmergency(desc)
                 toast('تم إرسال تنبيه الطوارئ 🚨 ستتواصل معك الإدارة قريباً')
                 setTimeout(() => navigate(-1), 1500)
               }}
