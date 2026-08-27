@@ -1,18 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import type { LatLng } from '../lib/types'
+import { IRAQ_CENTER, fitIraq, flyToIraqPlace } from '../lib/geo'
 
 /* ============================================================
    Zajel Admin — أداة رسم الحدود الجغرافية (Geofencing) على خريطة حقيقية
    Leaflet + OpenStreetMap (بدون مفاتيح API). تدعم:
+   - العرض الافتراضي: العراق كاملاً (كل المحافظات)
+   - الانتقال التلقائي لأي محافظة عبر بحث جغرافي حقيقي (Nominatim/OSM)
    - رسم مضلع بالنقر على الخريطة
    - التراجع عن آخر نقطة، إغلاق المضلع، والمسح
    - عرض مضلعات المناطق الأخرى كطبقة خلفية (Read-only)
    التصميم أبيض/أسود متوافق مع هوية لوحة الإدارة.
    ============================================================ */
-
-const DEFAULT_CENTER: LatLng = { lat: 33.3152, lng: 44.3661 } // بغداد
-const DEFAULT_ZOOM = 11
 
 export default function MapCanvas({
   points = [],
@@ -20,13 +20,16 @@ export default function MapCanvas({
   zones = [],
   tools = true,
   height = 384,
-  hint = 'انقر على الخريطة لتحديد نقاط حدود المنطقة، ثم أغلق المضلع بزر الإغلاق أو بالنقر قرب النقطة الأولى.',
+  governorate = null,
+  hint = 'اختر المحافظة ثم انقر على الخريطة لتحديد نقاط حدود المنطقة، وأغلق المضلع بزر الإغلاق أو بالنقر قرب النقطة الأولى.',
 }: {
   points?: LatLng[]
   onChange?: (p: LatLng[]) => void
   zones?: LatLng[][]
   tools?: boolean
   height?: number
+  /** اسم المحافظة المختارة (من بيانات النظام) — تنتقل الخريطة إليها عبر بحث جغرافي حقيقي */
+  governorate?: string | null
   hint?: string
 }) {
   const divRef = useRef<HTMLDivElement>(null)
@@ -40,9 +43,11 @@ export default function MapCanvas({
   const toolsRef = useRef(tools)
   const modeRef = useRef<'draw' | 'idle'>('draw')
   const closedRef = useRef(points.length > 2)
+  const govRef = useRef(!!governorate)
 
   const [mode, setMode] = useState<'draw' | 'idle'>('draw')
   const [closed, setClosed] = useState(points.length > 2)
+  const [govStatus, setGovStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
 
   useEffect(() => {
     pointsRef.current = points
@@ -50,14 +55,17 @@ export default function MapCanvas({
     toolsRef.current = tools
     modeRef.current = mode
     closedRef.current = closed
-  }, [points, onChange, tools, mode, closed])
+    govRef.current = !!governorate
+  }, [points, onChange, tools, mode, closed, governorate])
 
-  /* ---------- تهيئة الخريطة مرة واحدة ---------- */
+  /* ---------- تهيئة الخريطة مرة واحدة (تبدأ من العراق كاملاً) ---------- */
   useEffect(() => {
     if (!divRef.current || mapRef.current) return
     const map = L.map(divRef.current, {
-      center: [DEFAULT_CENTER.lat, DEFAULT_CENTER.lng],
-      zoom: DEFAULT_ZOOM,
+      center: [IRAQ_CENTER.lat, IRAQ_CENTER.lng],
+      zoom: 6,
+      minZoom: 4,
+      maxZoom: 19,
       scrollWheelZoom: true,
       dragging: true,
       zoomControl: true,
@@ -74,6 +82,8 @@ export default function MapCanvas({
     // إضافة نقطة عند النقر في وضع الرسم
     map.on('click', (e: L.LeafletMouseEvent) => {
       if (!toolsRef.current || modeRef.current !== 'draw' || closedRef.current) return
+      // لا يبدأ الرسم إلا بعد اختيار المحافظة (تحددها الإدارة بنفسها)
+      if (!govRef.current) return
       const pos: LatLng = { lat: e.latlng.lat, lng: e.latlng.lng }
       const current = pointsRef.current
 
@@ -97,6 +107,47 @@ export default function MapCanvas({
       drawLayerRef.current = null
     }
   }, [])
+
+  /* ---------- العرض الافتتاحي: المضلع المحفوظ، أو المحافظة، أو العراق كاملاً ---------- */
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    if (closedRef.current && pointsRef.current.length > 2) {
+      map.fitBounds(
+        L.latLngBounds(pointsRef.current.map((p) => [p.lat, p.lng] as [number, number])).pad(0.3),
+      )
+    } else if (governorate) {
+      setGovStatus('loading')
+      flyToIraqPlace(map, governorate).then((ok) => setGovStatus(ok ? 'done' : 'error'))
+    } else {
+      fitIraq(map)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /* ---------- الانتقال التلقائي للمحافظة المختارة (بحث جغرافي حقيقي) ---------- */
+  const prevGovRef = useRef<string | null>(governorate)
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    const prev = prevGovRef.current
+    prevGovRef.current = governorate
+
+    // إلغاء الاختيار → العودة لعرض العراق كاملاً
+    if (!governorate) {
+      if (prev) fitIraq(map)
+      return
+    }
+    if (prev === governorate) return
+    let cancelled = false
+    setGovStatus('loading')
+    flyToIraqPlace(map, governorate).then((ok) => {
+      if (!cancelled) setGovStatus(ok ? 'done' : 'error')
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [governorate])
 
   /* ---------- رسم المضلع القابل للتعديل ---------- */
   useEffect(() => {
@@ -176,6 +227,7 @@ export default function MapCanvas({
   }, [points, closed])
 
   const empty = points.length === 0 && zones.filter((z) => z.length > 2).length === 0
+  const showHint = empty || (tools && !governorate && points.length === 0)
 
   return (
     <div className="overflow-hidden rounded-xl border border-line">
@@ -222,15 +274,26 @@ export default function MapCanvas({
           >
             🗑️ مسح
           </button>
-          <span className="mr-auto text-[11px] font-semibold text-faint">
-            {points.length} نقطة {closed ? '· المضلع مغلق ✅' : '· ارسم بالترتيب حول حدود المنطقة'}
+          <span className="mr-auto flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-faint">
+            {governorate ? (
+              <>
+                <span>📍 {governorate}</span>
+                {govStatus === 'loading' && <span>· جاري تحديد الموقع…</span>}
+                {govStatus === 'error' && <span>· ⚠️ تعذر التحديد تلقائياً — حرّك الخريطة يدوياً</span>}
+              </>
+            ) : (
+              <span>🗺️ العراق كامل · اختر المحافظة لبدء الرسم</span>
+            )}
+            <span>
+              {points.length} نقطة {closed ? '· المضلع مغلق ✅' : '· ارسم بالترتيب حول حدود المنطقة'}
+            </span>
           </span>
         </div>
       )}
 
       <div className="relative" style={{ height }}>
         <div ref={divRef} className="zajel-map" style={{ height: '100%', width: '100%' }} />
-        {empty && (
+        {showHint && (
           <div className="pointer-events-none absolute inset-0 z-[500] flex items-center justify-center bg-page/60">
             <p className="max-w-md rounded-xl border border-line bg-white/95 px-4 py-3 text-center text-xs font-semibold text-mute shadow">
               🗺️ {hint}
