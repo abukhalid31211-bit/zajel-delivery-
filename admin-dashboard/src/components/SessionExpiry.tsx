@@ -65,11 +65,18 @@ export default function SessionExpiry({ toast }: { toast: (m: string) => void })
             className="btn-primary w-full py-3"
             onClick={() => {
               if (!password.trim()) return setError('كلمة المرور غير صحيحة.')
-              const admins = dbGet<AdminUser[]>('admins', [])
-              const found = admins.find((a) => a.phone === session.phone)
-              if (found && found.password && found.password !== password) {
-                setError('كلمة المرور غير صحيحة.')
-                return
+              if (isSuperPhone(session.phone)) {
+                if (!isSuperLogin(session.phone, password)) {
+                  setError('كلمة المرور غير صحيحة.')
+                  return
+                }
+              } else {
+                const admins = dbGet<AdminUser[]>('admins', [])
+                const found = admins.find((a) => a.phone === session.phone)
+                if (found && found.password && found.password !== password) {
+                  setError('كلمة المرور غير صحيحة.')
+                  return
+                }
               }
               startSession(session.phone, session.name, session.role, {
                 super: session.super,
