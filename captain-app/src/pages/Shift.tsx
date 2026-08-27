@@ -50,7 +50,7 @@ export default function Shift() {
           </span>
           <h2 className="text-base font-bold">فرصة التغيير انتهت</h2>
           <p className="text-xs leading-relaxed text-mute">
-            لقد استخدمت فرصة تغيير الشفت هذا الأسبوع. شفتك الحالي: <b className="text-gold-dark">{currentName || '—'}</b>. يمكنك التغيير الأسبوع القادم.
+            لقد استخدمت فرصة تغيير الشفت هذا الأسبوع. شفتك الحالي: <b className="text-gold-dark">{currentName || 'لم يُحدد'}</b>. يمكنك التغيير الأسبوع القادم.
           </p>
           <button className="btn-secondary w-full" onClick={() => navigate('/home')}>رجوع</button>
         </div>

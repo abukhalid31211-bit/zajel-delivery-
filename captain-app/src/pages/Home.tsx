@@ -54,16 +54,16 @@ export default function Home() {
     }
     const id = createDemoOrder({
       shopName: form.shopName.trim(),
-      shopPhone: form.shopPhone.trim() || '—',
-      shopAddress: form.shopAddress.trim() || '—',
+      shopPhone: form.shopPhone.trim(),
+      shopAddress: form.shopAddress.trim(),
       pickupArea: form.pickupArea.trim(),
       dropArea: form.dropArea.trim(),
       itemPrice: Number(form.itemPrice) || 0,
       deliveryFee: Number(form.deliveryFee) || 0,
       note: form.note.trim(),
-      customerName: form.customerName.trim() || '—',
-      customerPhone: form.customerPhone.trim() || '—',
-      customerAddress: form.customerAddress.trim() || '—',
+      customerName: form.customerName.trim(),
+      customerPhone: form.customerPhone.trim(),
+      customerAddress: form.customerAddress.trim(),
     })
     setShowDemo(false)
     navigate(`/order-alert?order=${id}`)

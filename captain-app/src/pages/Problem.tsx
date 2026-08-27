@@ -72,7 +72,7 @@ export default function Problem() {
         ))}
 
         {selected === 6 && (
-          <textarea className="field animate-fade-up min-h-20 resize-none" placeholder="اشرح المشكلة... (مطلوب)" value={other} onChange={(e) => setOther(e.target.value)} />
+          <textarea className="field animate-fade-up min-h-20 resize-none" value={other} onChange={(e) => setOther(e.target.value)} />
         )}
 
         {photoImage ? (

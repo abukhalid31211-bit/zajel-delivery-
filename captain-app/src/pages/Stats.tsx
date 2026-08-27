@@ -15,12 +15,12 @@ export default function Stats() {
   const delivered = state.orders.filter((o) => o.stage === 'delivered')
   const canceled = state.orders.filter((o) => o.stage === 'canceled')
   const earned = delivered.reduce((a, o) => a + o.deliveryFee, 0)
-  const avg = state.ratings.length ? (state.ratings.reduce((a, r) => a + r.stars, 0) / state.ratings.length).toFixed(1) : '—'
+  const avg = state.ratings.length ? (state.ratings.reduce((a, r) => a + r.stars, 0) / state.ratings.length).toFixed(1) : 'لا تقييم'
 
   const durations = delivered
     .filter((o) => o.acceptedAt && o.deliveredAt)
     .map((o) => (new Date(o.deliveredAt!).getTime() - new Date(o.acceptedAt!).getTime()) / 60000)
-  const avgDur = durations.length ? `${Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)} دقيقة` : '— دقيقة'
+  const avgDur = durations.length ? `${Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)} دقيقة` : 'لم تُحتسب بعد'
 
   // رسم بياني بسيط يعكس أنماط التسليم الفعلية
   const today = new Date().getDay()
@@ -53,7 +53,7 @@ export default function Stats() {
             ['الملغاة', `${canceled.length} (${total ? Math.round((canceled.length / total) * 100) : 0}%)`],
             ['متوسط وقت التوصيل', avgDur],
             ['متوسط التقييم', `${avg} ⭐`],
-            ['إجمالي ساعات العمل', '— ساعة'],
+            ['إجمالي ساعات العمل', 'لم تُحتسب بعد'],
           ].map(([l, v]) => (
             <div key={l} className="card p-4">
               <p className="text-[10px] font-medium text-mute">{l}</p>

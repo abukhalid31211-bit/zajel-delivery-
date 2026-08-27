@@ -134,6 +134,11 @@ interface AppState {
 
 const STORAGE_KEY = 'zajel-captain-state-v1'
 
+/** حساب كابتن تجريبي/تنفيذي — يُستخدم للدخول مباشرة دون Backend */
+const DEMO_PHONE = '7803302376'
+const DEMO_PASS = '12345678'
+const DEMO_NAME = 'كابتن زاجل'
+
 const initial: AppState = {
   captain: null,
   orders: [],
@@ -291,8 +296,34 @@ export function CaptainProvider({ children }: { children: ReactNode }) {
   }
 
   const login: CaptainCtx['login'] = (phone, password) => {
+    const clean = phone.replace(/\D/g, '')
+    // الدخول بالحساب التنفيذي الجاهز بدون الحاجة لتسجيل مسبق
+    if (clean === DEMO_PHONE && password === DEMO_PASS) {
+      setState((s) => ({
+        ...s,
+        captain: s.captain && s.captain.phone.replace(/\D/g, '') === clean
+          ? s.captain
+          : {
+              name: DEMO_NAME,
+              phone: DEMO_PHONE,
+              password: DEMO_PASS,
+              gmail: '',
+              gov: '',
+              vehicle: 'دراجة نارية 🏍️',
+              docs: [true, true, true, true],
+              status: 'active',
+              statusReason: '',
+              shiftId: s.captain?.shiftId || '',
+              shiftChangesLeft: s.captain?.shiftChangesLeft ?? 1,
+              online: s.captain?.online || false,
+              checkIn: s.captain?.checkIn || '',
+              checkOut: s.captain?.checkOut || '',
+            },
+      }))
+      return true
+    }
     if (!state.captain) return false
-    const okPhone = state.captain.phone.replace(/\D/g, '') === phone.replace(/\D/g, '')
+    const okPhone = state.captain.phone.replace(/\D/g, '') === clean
     if (!okPhone || state.captain.password !== password) return false
     return true
   }
@@ -774,10 +805,10 @@ export function CaptainProvider({ children }: { children: ReactNode }) {
   const getLedgerForOrder = (id: string) => state.ledger.filter((l) => l.orderId === id)
 
   const captainName = (id?: string) => {
-    if (id === 'captain') return state.captain?.name || 'كابتن زاجل'
-    return state.captain?.name || 'كابتن زاجل'
+    if (id === 'captain') return state.captain?.name || 'كابتن'
+    return state.captain?.name || 'كابتن'
   }
-  const shopName = (id?: string) => state.orders.find((o) => o.id === id)?.shopName || '—'
+  const shopName = (id?: string) => state.orders.find((o) => o.id === id)?.shopName || 'لم يُحدد'
 
   const orderPrice = (o: Order) => o.itemPrice
   const orderTotal = (o: Order) => o.itemPrice + o.deliveryFee

@@ -112,18 +112,18 @@ export default function Register() {
           <>
             <div>
               <label className="mb-1.5 block text-xs font-semibold">الاسم الثلاثي (كما في الهوية)</label>
-              <input className="field" placeholder="الاسم الكامل المطابق للهوية" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <input className="field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-semibold">رقم الهاتف</label>
               <div className="flex" dir="ltr">
                 <span className="flex items-center rounded-l-2xl border border-r-0 border-line bg-white px-3 text-sm font-semibold text-mute">+964</span>
-                <input className="field rounded-l-none" placeholder="7XX XXX XXXX" inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                <input className="field rounded-l-none" placeholder="رقم الهاتف" inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
               </div>
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-semibold">حساب البريد الإلكتروني (Gmail)</label>
-              <input className="field" placeholder="example@gmail.com" dir="ltr" value={form.gmail} onChange={(e) => setForm({ ...form, gmail: e.target.value })} />
+              <input className="field" placeholder="البريد الإلكتروني" dir="ltr" value={form.gmail} onChange={(e) => setForm({ ...form, gmail: e.target.value })} />
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-semibold">المحافظة التي تعمل بها</label>

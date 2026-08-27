@@ -94,7 +94,7 @@ export default function ComplaintDetail() {
           <div className="card border-gold p-4">
             <p className="text-xs font-bold">رد الإدارة:</p>
             <p className="mt-1 text-[11px] leading-relaxed text-mute">{complaint.adminReply}</p>
-            <p className="mt-2 text-[10px] text-faint">—</p>
+            <p className="mt-2 text-[10px] text-faint">تم تسجيل الرد عبر الإدارة</p>
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-gold bg-white p-4 text-center text-[11px] text-mute">لم يصدر رد من الإدارة بعد. سيظهر هنا فور مراجعة الشكوى.</div>
@@ -110,7 +110,7 @@ export default function ComplaintDetail() {
         </div>
 
         <div className="flex gap-2">
-          <input className="field" placeholder="إضافة تعليق..." value={comment} onChange={(e) => setComment(e.target.value)} />
+          <input className="field" value={comment} onChange={(e) => setComment(e.target.value)} />
           <button onClick={send} className="btn-primary shrink-0"><Send className="h-4 w-4" /></button>
         </div>
 

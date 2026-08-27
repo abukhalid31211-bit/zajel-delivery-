@@ -76,7 +76,7 @@ export default function ForgotPassword() {
             <p className="text-xs leading-relaxed text-mute">أدخل رقم هاتفك المسجل وسنرسل لك رمز التحقق.</p>
             <div className="flex" dir="ltr">
               <span className="flex items-center rounded-l-2xl border border-r-0 border-line bg-white px-3 text-sm font-semibold text-mute">+964</span>
-              <input className="field rounded-l-none" placeholder="7XX XXX XXXX" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <input className="field rounded-l-none" placeholder="رقم الهاتف" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
             {error && <p className="text-[11px] font-semibold text-red-600">⚠ {error}</p>}
             <button className="btn-primary w-full" onClick={sendCode} disabled={loading}>

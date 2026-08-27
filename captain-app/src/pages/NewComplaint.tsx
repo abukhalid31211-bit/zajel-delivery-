@@ -117,7 +117,7 @@ export default function NewComplaint() {
         {step === 3 && (
           <>
             <h2 className="text-sm font-bold">وصف المشكلة</h2>
-            <textarea className="field min-h-32 resize-none" placeholder="اشرح المشكلة بالتفصيل... (20 حرفاً على الأقل)" value={desc} onChange={(e) => setDesc(e.target.value)} />
+            <textarea className="field min-h-32 resize-none" value={desc} onChange={(e) => setDesc(e.target.value)} />
             <p className="text-left text-[10px] text-faint" dir="ltr">{desc.trim().length} / 20</p>
             {photoImage ? (
               <div className="space-y-2">
@@ -144,8 +144,8 @@ export default function NewComplaint() {
             <h2 className="text-sm font-bold">المراجعة والإرسال</h2>
             <div className="card divide-y divide-line">
               {[
-                ['الطلب المرتبط', order === 'general' ? 'شكوى عامة' : order ? state.orders.find((o) => o.id === order)?.title || `#${order.slice(-5).toUpperCase()}` : '—'],
-                ['نوع الشكوى', type !== null ? types[type] : '—'],
+                ['الطلب المرتبط', order === 'general' ? 'شكوى عامة' : order ? state.orders.find((o) => o.id === order)?.title || 'لم يُحدد' : 'لم يُحدد'],
+                ['نوع الشكوى', type !== null ? types[type] : 'لم يُحدد'],
                 ['الوصف', desc.slice(0, 60) + (desc.length > 60 ? '…' : '')],
                 ['المرفقات', photo ? 'صورة واحدة' : 'لا يوجد'],
               ].map(([k, v]) => (

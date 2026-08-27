@@ -20,9 +20,9 @@ const groups = [
   {
     title: 'عام',
     items: [
-      { icon: Globe, label: 'تغيير اللغة — العربية', to: '/language' },
+      { icon: Globe, label: 'تغيير اللغة (العربية)', to: '/language' },
       { icon: Headphones, label: 'المساعدة والدعم', to: '/support' },
-      { icon: Info, label: 'معلومات التطبيق — الإصدار 1.0.0', to: '/about' },
+      { icon: Info, label: 'معلومات التطبيق (إصدار 1.0.0)', to: '/about' },
       { icon: Trash2, label: 'حذف الحساب', to: '/delete-account' },
     ],
   },
@@ -64,10 +64,10 @@ export default function Profile() {
             <p className="mt-0.5 text-[11px] text-mute">{captain ? `+964 ${captain.phone}` : 'أكمل تسجيل الدخول لعرض بياناتك'}</p>
             <div className="mt-1.5 flex items-center gap-2">
               <span className={`badge ${captain?.status === 'active' ? 'bg-gold text-white' : 'bg-faint text-white'}`}>
-                {captain?.status === 'active' ? 'نشط 🟢' : captain?.status === 'pending' ? 'قيد الموافقة ⏳' : captain?.status === 'suspended' ? 'موقوف 🚫' : captain?.status === 'rejected' ? 'مرفوض ❌' : '—'}
+                {captain?.status === 'active' ? 'نشط 🟢' : captain?.status === 'pending' ? 'قيد الموافقة ⏳' : captain?.status === 'suspended' ? 'موقوف 🚫' : captain?.status === 'rejected' ? 'مرفوض ❌' : 'غير معروف'}
               </span>
               <span className="flex items-center gap-1 text-[11px] font-bold">
-                <Star className="h-3.5 w-3.5 fill-gold text-gold" /> {state.ratings.length ? (state.ratings.reduce((a, r) => a + r.stars, 0) / state.ratings.length).toFixed(1) : '—'}
+                <Star className="h-3.5 w-3.5 fill-gold text-gold" /> {state.ratings.length ? (state.ratings.reduce((a, r) => a + r.stars, 0) / state.ratings.length).toFixed(1) : 'لا تقييم'}
               </span>
             </div>
           </div>
@@ -87,7 +87,7 @@ export default function Profile() {
       </div>
 
       <div className="card mt-5 p-4">
-        <p className="mb-2 text-[11px] font-bold text-faint">حالة الحساب (وضع العرض المحلي — بدون Backend)</p>
+        <p className="mb-2 text-[11px] font-bold text-faint">حالة الحساب (وضع العرض المحلي)</p>
         <div className="flex gap-2">
           {statuses.map((s) => (
             <button key={s.value} onClick={() => { setStatus(s.value); toast(`تم ضبط الحالة: ${s.label}`) }} className={`flex-1 rounded-xl px-2 py-2 text-[10px] font-bold ${captain?.status === s.value ? 'bg-gold text-white' : 'border border-line bg-white text-mute'}`}>{s.label}</button>

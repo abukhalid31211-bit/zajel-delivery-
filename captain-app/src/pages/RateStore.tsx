@@ -64,7 +64,7 @@ export default function RateStore() {
           </div>
         </div>
 
-        <textarea className="field min-h-20 resize-none" placeholder="تعليق (اختياري)..." value={comment} onChange={(e) => setComment(e.target.value)} />
+        <textarea className="field min-h-20 resize-none" value={comment} onChange={(e) => setComment(e.target.value)} />
       </div>
 
       <div className="space-y-2.5 border-t border-line bg-white px-5 py-4">

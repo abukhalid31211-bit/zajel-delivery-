@@ -41,12 +41,12 @@ export default function OrderAlert() {
   }
 
   const rows = [
-    { icon: Store, label: 'المحل / المطعم', value: order.shopName },
-    { icon: MapPin, label: 'منطقة الاستلام', value: order.pickupArea },
-    { icon: MapPin, label: 'منطقة التوصيل', value: order.dropArea },
+    { icon: Store, label: 'المحل / المطعم', value: order.shopName || 'لم يُحدد' },
+    { icon: MapPin, label: 'منطقة الاستلام', value: order.pickupArea || 'لم تُحدد' },
+    { icon: MapPin, label: 'منطقة التوصيل', value: order.dropArea || 'لم تُحدد' },
     { icon: Banknote, label: 'مبلغ الطلبية للمحل', value: money(order.itemPrice) },
     { icon: Banknote, label: 'أجرة التوصيل لك', value: money(order.deliveryFee) },
-    { icon: StickyNote, label: 'الملاحظات', value: order.note || '—' },
+    { icon: StickyNote, label: 'الملاحظات', value: order.note || 'لا توجد ملاحظات' },
   ]
 
   return (

@@ -9,7 +9,7 @@ export default function Delivered() {
   const order = getOrder(params.get('order') || '')
 
   const duration = (() => {
-    if (!order?.acceptedAt || !order.deliveredAt) return '— دقيقة'
+    if (!order?.acceptedAt || !order.deliveredAt) return 'لم تُحتسب بعد'
     const ms = new Date(order.deliveredAt).getTime() - new Date(order.acceptedAt).getTime()
     const total = Math.max(0, Math.round(ms / 60000))
     return `${total} دقيقة`
@@ -26,12 +26,12 @@ export default function Delivered() {
 
         <div className="card w-full divide-y divide-line text-right">
           {[
-            ['رقم الطلب', order?.title || '#—'],
-            ['المحل', order?.shopName || '—'],
+            ['رقم الطلب', order?.title || 'لم يُحدد'],
+            ['المحل', order?.shopName || 'لم يُحدد'],
             ['المبلغ المستلم من الزبون', money(order ? order.itemPrice + order.deliveryFee : 0)],
             ['أجرتك (صافي الربح)', money(order?.deliveryFee || 0)],
             ['مدة التوصيل الكلية', duration],
-            ['التاريخ', order?.deliveredAt ? fmtDate(order.deliveredAt) : '—'],
+            ['التاريخ', order?.deliveredAt ? fmtDate(order.deliveredAt) : 'لم يُحدد'],
           ].map(([k, v]) => (
             <div key={k} className="flex items-center justify-between px-4 py-3">
               <span className="text-xs text-mute">{k}</span>

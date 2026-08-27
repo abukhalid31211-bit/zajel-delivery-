@@ -109,8 +109,8 @@ export default function Order() {
               </a>
             </div>
             <div className="grid grid-cols-2 divide-x divide-x-reverse divide-line text-center">
-              <div className="px-2 py-2.5"><p className="text-[10px] text-mute">المسافة التقريبية</p><p className="text-xs font-bold">— كم</p></div>
-              <div className="px-2 py-2.5"><p className="text-[10px] text-mute">الوقت التقديري</p><p className="text-xs font-bold">— دقيقة</p></div>
+              <div className="px-2 py-2.5"><p className="text-[10px] text-mute">المسافة التقريبية</p><p className="text-xs font-bold text-faint">تظهر بعد ربط GPS</p></div>
+              <div className="px-2 py-2.5"><p className="text-[10px] text-mute">الوقت التقديري</p><p className="text-xs font-bold text-faint">تظهر بعد ربط GPS</p></div>
             </div>
             <div className="px-4 py-3 text-[11px] text-mute"><b className="text-gold-dark">ملاحظات:</b> {order.note || 'لا توجد'}</div>
           </div>
@@ -162,7 +162,7 @@ export default function Order() {
           <div className="card space-y-3 p-4">
             <div className="flex items-center gap-2 rounded-xl bg-page px-4 py-3 text-[11px] font-bold">
               <Check className="h-4 w-4 text-green-600" />
-              {stage === 'delivered' ? `تم التسليم ${order.deliveredAt ? fmtTime(order.deliveredAt) : ''}` : stage === 'canceled' ? `أُلغي الطلب — ${order.cancelReason || ''}` : stage === 'returned' || stage === 'awaitRefund' || stage === 'refunded' ? `مرتجع — ${order.problem || ''}` : ''}
+              {stage === 'delivered' ? `تم التسليم ${order.deliveredAt ? fmtTime(order.deliveredAt) : ''}` : stage === 'canceled' ? `أُلغي الطلب${order.cancelReason ? ' · ' + order.cancelReason : ''}` : stage === 'returned' || stage === 'awaitRefund' || stage === 'refunded' ? `مرتجع${order.problem ? ' · ' + order.problem : ''}` : ''}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl border border-line p-3"><p className="text-[10px] text-mute">دفعت للمحل</p><p className="text-sm font-bold">{money(order.itemPrice)}</p></div>
@@ -229,7 +229,7 @@ export default function Order() {
               <option value="" disabled>اختر السبب</option>
               {cancelReasons.map((r) => <option key={r}>{r}</option>)}
             </select>
-            <textarea className="field min-h-16 resize-none" placeholder="تفاصيل إضافية (اختياري)" value={cancelDetails} onChange={(e) => setCancelDetails(e.target.value)} />
+            <textarea className="field min-h-16 resize-none" value={cancelDetails} onChange={(e) => setCancelDetails(e.target.value)} />
             <p className="rounded-xl border border-dashed border-gold px-3 py-2 text-[10px] font-semibold">⚠️ إلغاء الطلبات المتكرر قد يؤثر على تقييمك.</p>
           </div>
           <div className="mt-4 flex gap-2">

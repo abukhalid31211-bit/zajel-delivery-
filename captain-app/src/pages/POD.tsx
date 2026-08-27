@@ -90,7 +90,7 @@ export default function POD() {
                 className={`flex w-full items-center justify-center gap-2 rounded-2xl border py-3 text-xs font-bold transition-colors ${smsSent ? 'border-gold bg-gold text-white' : 'border-dashed border-line'}`}
               >
                 <MessageSquareText className="h-4 w-4" />
-                {smsSent ? 'أُرسل الرمز — اضغط لإعادة الإرسال' : '📩 إرسال رمز OTP للزبون عبر SMS'}
+                {smsSent ? 'أُرسل الرمز · اضغط لإعادة الإرسال' : '📩 إرسال رمز OTP للزبون عبر SMS'}
               </button>
               <div className="flex justify-center gap-3 pt-2" dir="ltr">
                 {otp.map((d, i) => (
