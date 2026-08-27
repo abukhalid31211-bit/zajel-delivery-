@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, Loader2, CheckCircle2 } from 'lucide-react'
+import { ArrowRight, Loader2, CheckCircle2, Eye, EyeOff } from 'lucide-react'
 import Logo from '../components/Logo'
+import { isIraqMobile, passwordStrength } from '../lib/validate'
+import { logSecurity } from '../lib/store'
 
 export default function ForgotPassword() {
   const navigate = useNavigate()
@@ -12,17 +14,32 @@ export default function ForgotPassword() {
   const [pass, setPass] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')
+  const [shake, setShake] = useState(false)
+  const [otpTries, setOtpTries] = useState(0)
+  const [sec, setSec] = useState(120)
+  const [show1, setShow1] = useState(false)
+  const [show2, setShow2] = useState(false)
 
-  const strength = pass.length === 0 ? null : pass.length < 6 ? 'ضعيفة' : pass.length <= 8 ? 'متوسطة' : 'قوية'
+  const strength = passwordStrength(pass)
+
+  useEffect(() => {
+    if (step !== 2 || sec <= 0) return
+    const t = window.setInterval(() => setSec((s) => s - 1), 1000)
+    return () => window.clearInterval(t)
+  }, [step, sec])
 
   const sendCode = (e: React.FormEvent) => {
     e.preventDefault()
     if (!phone.trim()) return setError('رقم الهاتف مطلوب')
+    if (!isIraqMobile(phone)) return setError('رقم الهاتف غير صالح')
     setError('')
     setLoading(true)
-    setTimeout(() => {
+    window.setTimeout(() => {
       setLoading(false)
       setStep(2)
+      setSec(120)
+      setOtp(['', '', '', ''])
+      setOtpTries(0)
     }, 800)
   }
 
@@ -32,7 +49,28 @@ export default function ForgotPassword() {
     next[i] = v
     setOtp(next)
     if (v && i < 3) document.getElementById(`otp-${i + 1}`)?.focus()
-    if (next.every((d) => d !== '')) setTimeout(() => setStep(3), 400)
+    if (next.every((d) => d !== '')) verify(next.join(''))
+  }
+
+  const verify = (code: string) => {
+    if (otpTries >= 5) {
+      setError('تم تجاوز عدد المحاولات. أعد إرسال الرمز.')
+      return
+    }
+    // بدون باك-إند: أي رمز من 4 أرقام يُقبل. الرمز 0000 يُرفض لتفعيل تدفق الخطأ.
+    if (code === '0000') {
+      setShake(true)
+      window.setTimeout(() => setShake(false), 450)
+      const tries = otpTries + 1
+      setOtpTries(tries)
+      setOtp(['', '', '', ''])
+      document.getElementById('otp-0')?.focus()
+      if (tries >= 5) setError('تم تجاوز عدد المحاولات. أعد إرسال الرمز.')
+      else setError('الرمز غير صحيح. حاول مرة أخرى.')
+      return
+    }
+    setError('')
+    setStep(3)
   }
 
   const changePass = (e: React.FormEvent) => {
@@ -41,11 +79,15 @@ export default function ForgotPassword() {
     if (pass !== confirm) return setError('كلمة المرور غير متطابقة')
     setError('')
     setLoading(true)
-    setTimeout(() => {
+    window.setTimeout(() => {
       setLoading(false)
       setStep(4)
+      logSecurity({ type: 'تغيير كلمة مرور', user: phone, result: 'نجاح', details: 'استعادة كلمة المرور' })
     }, 800)
   }
+
+  const mm = String(Math.floor(sec / 60)).padStart(2, '0')
+  const ss = String(sec % 60).padStart(2, '0')
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-page p-4">
@@ -70,7 +112,13 @@ export default function ForgotPassword() {
               </div>
               {error && <p className="text-[11px] font-medium">⚠ {error}</p>}
               <button className="btn-primary w-full py-3" disabled={loading}>
-                {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> جاري الإرسال...</> : 'إرسال رمز التحقق'}
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> جاري الإرسال...
+                  </>
+                ) : (
+                  'إرسال رمز التحقق'
+                )}
               </button>
             </form>
           )}
@@ -79,7 +127,7 @@ export default function ForgotPassword() {
             <div className="space-y-4">
               <h1 className="text-lg font-bold">أدخل رمز التحقق</h1>
               <p className="text-xs leading-relaxed text-mute">تم إرسال رمز مكون من 4 أرقام إلى الرقم +964 {phone}</p>
-              <div className="flex justify-center gap-3" dir="ltr">
+              <div className={`flex justify-center gap-3 ${shake ? 'animate-shake' : ''}`} dir="ltr">
                 {otp.map((d, i) => (
                   <input
                     key={i}
@@ -89,11 +137,28 @@ export default function ForgotPassword() {
                     inputMode="numeric"
                     value={d}
                     onChange={(e) => setDigit(i, e.target.value)}
+                    disabled={otpTries >= 5}
                   />
                 ))}
               </div>
-              <p className="text-center text-[11px] text-faint">إعادة إرسال الرمز بعد 01:59</p>
-              <button onClick={() => setStep(1)} className="block w-full text-center text-xs font-medium text-mute hover:text-black">
+              {error && <p className="text-center text-[11px] font-medium">⚠ {error}</p>}
+              <p className="text-center text-[11px] text-faint">
+                {sec > 0 ? `إعادة إرسال الرمز بعد ${mm}:${ss}` : ''}
+              </p>
+              <button
+                type="button"
+                disabled={sec > 0 && otpTries < 5}
+                onClick={() => {
+                  setSec(120)
+                  setOtpTries(0)
+                  setError('')
+                  setOtp(['', '', '', ''])
+                }}
+                className="block w-full text-center text-xs font-medium text-mute hover:text-black disabled:opacity-40"
+              >
+                إعادة إرسال الرمز
+              </button>
+              <button onClick={() => { setStep(1); setError('') }} className="block w-full text-center text-xs font-medium text-mute hover:text-black">
                 تغيير رقم الهاتف
               </button>
             </div>
@@ -104,7 +169,12 @@ export default function ForgotPassword() {
               <h1 className="text-lg font-bold">كلمة المرور الجديدة</h1>
               <div>
                 <label className="mb-1.5 block text-xs font-semibold">كلمة المرور الجديدة</label>
-                <input type="password" className="field" value={pass} onChange={(e) => setPass(e.target.value)} />
+                <div className="relative">
+                  <input type={show1 ? 'text' : 'password'} className="field pl-10" value={pass} onChange={(e) => setPass(e.target.value)} />
+                  <button type="button" className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" onClick={() => setShow1((v) => !v)}>
+                    {show1 ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
                 {strength && (
                   <div className="mt-2 flex items-center gap-2">
                     <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-page">
@@ -113,17 +183,30 @@ export default function ForgotPassword() {
                         style={{ width: strength === 'ضعيفة' ? '33%' : strength === 'متوسطة' ? '66%' : '100%' }}
                       />
                     </div>
-                    <span className="text-[11px] font-medium text-mute">{strength}</span>
+                    <span className="text-[11px] font-medium text-mute">
+                      {strength === 'ضعيفة' ? '🔴 ضعيفة' : strength === 'متوسطة' ? '🟡 متوسطة' : '🟢 قوية'}
+                    </span>
                   </div>
                 )}
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-semibold">تأكيد كلمة المرور الجديدة</label>
-                <input type="password" className="field" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+                <div className="relative">
+                  <input type={show2 ? 'text' : 'password'} className="field pl-10" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+                  <button type="button" className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" onClick={() => setShow2((v) => !v)}>
+                    {show2 ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
               {error && <p className="text-[11px] font-medium">⚠ {error}</p>}
               <button className="btn-primary w-full py-3" disabled={loading}>
-                {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> جاري الحفظ...</> : 'تغيير كلمة المرور'}
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> جاري الحفظ...
+                  </>
+                ) : (
+                  'تغيير كلمة المرور'
+                )}
               </button>
             </form>
           )}

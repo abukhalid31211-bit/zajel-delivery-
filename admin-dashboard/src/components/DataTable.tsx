@@ -1,17 +1,28 @@
 import EmptyState from './EmptyState'
 import type { LucideIcon } from 'lucide-react'
 
+export type TableRow = {
+  key: string
+  cells: React.ReactNode[]
+  onClick?: () => void
+}
+
 export default function DataTable({
   columns,
+  rows,
   emptyTitle,
   emptyHint,
   emptyIcon,
+  emptyAction,
 }: {
   columns: string[]
+  rows?: TableRow[]
   emptyTitle?: string
   emptyHint?: string
   emptyIcon?: LucideIcon
+  emptyAction?: React.ReactNode
 }) {
+  const hasRows = !!rows && rows.length > 0
   return (
     <div className="card overflow-hidden">
       <div className="overflow-x-auto">
@@ -25,9 +36,26 @@ export default function DataTable({
               ))}
             </tr>
           </thead>
+          {hasRows && (
+            <tbody>
+              {rows!.map((r) => (
+                <tr
+                  key={r.key}
+                  onClick={r.onClick}
+                  className={`border-b border-line last:border-0 ${r.onClick ? 'cursor-pointer hover:bg-page' : ''}`}
+                >
+                  {r.cells.map((cell, i) => (
+                    <td key={i} className="whitespace-nowrap px-4 py-3 text-xs" onClick={i === columns.length - 1 ? (e) => e.stopPropagation() : undefined}>
+                      {cell}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          )}
         </table>
       </div>
-      <EmptyState icon={emptyIcon} title={emptyTitle} hint={emptyHint} />
+      {!hasRows && <EmptyState icon={emptyIcon} title={emptyTitle} hint={emptyHint} action={emptyAction} />}
     </div>
   )
 }
