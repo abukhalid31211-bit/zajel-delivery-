@@ -1,1 +1,0 @@
-clean_docs/store_app.md
