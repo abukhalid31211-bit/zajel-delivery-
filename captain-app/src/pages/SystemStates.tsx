@@ -22,7 +22,7 @@ export function Suspended() {
           <p className="mt-1 text-[11px] leading-relaxed text-mute">{captain?.statusReason || 'لم يُحدد سبب بعد'}</p>
         </div>
         <p className="text-[11px] text-faint">إذا كنت تعتقد أن هذا خطأ، تواصل مع الإدارة.</p>
-        <a href="tel:7803302376" className="btn-primary w-full"><Phone className="h-4 w-4" /> 📞 تواصل مع الإدارة</a>
+        <a href="tel:07888216090" className="btn-primary w-full"><Phone className="h-4 w-4" /> 📞 تواصل مع الإدارة</a>
         <button className="text-xs font-bold text-mute underline-offset-4 hover:underline" onClick={() => { logout(); navigate('/login') }}>تسجيل الخروج</button>
         <button className="btn-secondary w-full" onClick={() => { setStatus('active'); toast('تمت إعادة تفعيل حسابك. مرحباً بعودتك! ✅'); navigate('/home', { replace: true }) }}>
           🟢 محاكاة إعادة التفعيل (وضع العرض)
@@ -49,7 +49,7 @@ export function Rejected() {
         </div>
         <p className="max-w-72 text-[11px] leading-relaxed text-faint">يمكنك تعديل بياناتك وإعادة التقديم — الطلب الجديد منفصل تماماً عن الطلب المرفوض.</p>
         <button className="btn-primary w-full" onClick={() => navigate('/register')}>تقديم طلب جديد</button>
-        <a href="tel:7803302376" className="btn-secondary w-full"><Phone className="h-4 w-4" /> تواصل مع الدعم</a>
+        <a href="tel:07888216090" className="btn-secondary w-full"><Phone className="h-4 w-4" /> تواصل مع الدعم</a>
         <button onClick={() => navigate('/')} className="flex items-center gap-1 text-xs font-bold text-mute underline-offset-4 hover:underline"><ArrowRight className="h-3.5 w-3.5" /> العودة</button>
       </div>
     </div>

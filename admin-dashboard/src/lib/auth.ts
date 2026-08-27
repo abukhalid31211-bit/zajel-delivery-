@@ -1,4 +1,4 @@
-export const SUPER_PHONE = '7803302376'
+export const SUPER_PHONE = '7888216090'
 export const SUPER_PASSWORD = '12345678'
 export const SUPER_NAME = 'مدير النظام'
 

@@ -188,7 +188,7 @@ export default function OrderDetails() {
           <button className="btn-secondary" onClick={() => navigate(`/complaints/new${order.id ? `?order=${order.id}` : ''}`)}>
             <TriangleAlert className="h-4 w-4" /> تقديم شكوى
           </button>
-          <a href="tel:+964" className="btn-secondary">
+          <a href="tel:07888216090" className="btn-secondary">
             <Headphones className="h-4 w-4" /> الدعم
           </a>
         </div>

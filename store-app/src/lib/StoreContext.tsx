@@ -26,7 +26,7 @@ const SESSION_MINUTES = 30
 const REVIEW_SECONDS = 6 // مدة المراجعة الآلية لطلب التسجيل (تُستبدل بقرار الإدارة عبر الـ API)
 
 /* حساب محل تنفيذي/تجريبي — يُستخدم للدخول مباشرة دون Backend (لا يُعرض في الواجهة) */
-const DEMO_PHONE = '7803302376'
+const DEMO_PHONE = '7888216090'
 const DEMO_PASSWORD = '12345678'
 const DEMO_PROFILE: StoreProfile = {
   name: 'محل زاجل',
