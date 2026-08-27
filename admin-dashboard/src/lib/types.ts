@@ -37,6 +37,17 @@ export type StoreItem = {
   status: 'نشط' | 'بانتظار الموافقة' | 'موقوف'
   createdAt: string
 }
+/** تخصيص سعر التوصيل لمحل محدد — يتجاوز نظام التسعير العام */
+export type StorePriceOverride = {
+  id: string
+  storeId: string
+  /** أجرة التوصيل بالدينار العراقي (نص أرقام كما في بقية اللوحة) */
+  fee: string
+  note: string
+  createdAt: string
+  updatedAt: string
+  updatedBy: string
+}
 export type StoreChange = {
   id: string
   storeId: string

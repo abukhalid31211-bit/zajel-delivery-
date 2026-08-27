@@ -10,6 +10,7 @@ import Captains from './pages/Captains'
 import Stores from './pages/Stores'
 import Zones from './pages/Zones'
 import Pricing from './pages/Pricing'
+import PriceCustomization from './pages/PriceCustomization'
 import Reports from './pages/Reports'
 import Settlement from './pages/Settlement'
 import Notifications from './pages/Notifications'
@@ -51,6 +52,7 @@ export default function App() {
         <Route path="/stores/profile" element={<StoreProfile />} />
         <Route path="/zones" element={<Zones />} />
         <Route path="/pricing" element={<Pricing />} />
+        <Route path="/price-customization" element={<PriceCustomization />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/settlement" element={<Settlement />} />
         <Route path="/notifications" element={<Notifications />} />

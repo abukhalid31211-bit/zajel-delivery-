@@ -19,6 +19,7 @@ export const DEFAULT_TEXTS: Record<string, string> = {
   nav_governorates: 'المحافظات',
   nav_districts: 'المناطق',
   nav_pricing: 'أسعار التوصيل',
+  nav_price_customization: 'تخصيص الأسعار',
   nav_reports: 'التقارير والمحاسبة',
   nav_settlements: 'التسوية المالية',
   nav_notifications: 'مركز الإشعارات',

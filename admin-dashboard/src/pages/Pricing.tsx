@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Route, Map, Pencil, Trash2 } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import DataTable from '../components/DataTable'
@@ -56,9 +56,14 @@ export default function Pricing() {
         title="أسعار التوصيل"
         subtitle="إدارة نظام تسعير زاجل ديلفري — جميع التغييرات تُسجل في سجل العمليات"
         actions={
-          <span className="badge border border-black bg-black text-white">
-            النظام النشط حالياً: {settings.pricingMode === 'geo' ? 'نظام المناطق الجغرافية' : 'نظام المسارات (من ← إلى)'}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link to="/price-customization" className="btn-secondary text-xs">
+              🏪 تخصيص أسعار المحلات
+            </Link>
+            <span className="badge border border-black bg-black text-white">
+              النظام النشط حالياً: {settings.pricingMode === 'geo' ? 'نظام المناطق الجغرافية' : 'نظام المسارات (من ← إلى)'}
+            </span>
+          </div>
         }
       />
 

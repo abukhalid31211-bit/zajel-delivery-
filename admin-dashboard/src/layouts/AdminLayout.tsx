@@ -7,6 +7,7 @@ import {
   Store,
   Map,
   Tag,
+  Tags,
   BarChart3,
   Wallet,
   Bell,
@@ -92,6 +93,7 @@ const nav: Item[] = [
       { to: '/pricing?tab=geo', label: 'نظام المناطق الجغرافية' },
     ],
   },
+  { to: '/price-customization', label: 'تخصيص الأسعار', icon: Tags },
   {
     to: '/reports',
     label: 'التقارير والمحاسبة',
