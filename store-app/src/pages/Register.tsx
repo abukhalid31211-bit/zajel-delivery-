@@ -1,13 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, Loader2, LocateFixed, Pizza, ShoppingCart, Pill, ShoppingBag } from 'lucide-react'
+import { Check, Loader2, LocateFixed } from 'lucide-react'
 import { useStore } from '../lib/StoreContext'
-import { BUSINESS_TYPES, GOVERNORATES, zoneFor, isValidIraqiPhone } from '../lib/data'
+import { BUSINESS_TYPES, OTHER_TYPE, GOVERNORATES, zoneFor, isValidIraqiPhone } from '../lib/data'
 import { LocationPicker, DEFAULT_CENTER, zoneRing } from '../lib/MapLib'
 import Stepper from '../components/Stepper'
 import type { LatLng } from '../lib/data'
-
-const typeIcons = [Pizza, ShoppingCart, Pill, ShoppingBag]
 
 export default function Register() {
   const navigate = useNavigate()
@@ -15,7 +13,14 @@ export default function Register() {
   const isResubmit = profile?.status === 'rejected'
 
   const [step, setStep] = useState(1)
-  const [type, setType] = useState<number | null>(null)
+  const [type, setType] = useState(() => {
+    const t = profile?.type ?? ''
+    return t && !BUSINESS_TYPES.includes(t) ? OTHER_TYPE : t
+  })
+  const [customType, setCustomType] = useState(() => {
+    const t = profile?.type ?? ''
+    return t && !BUSINESS_TYPES.includes(t) ? t : ''
+  })
   const [pinned, setPinned] = useState<LatLng | null>(profile?.location ?? null)
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
@@ -44,7 +49,8 @@ export default function Register() {
     const errs: Record<string, string> = {}
     if (step === 1) {
       if (!form.name.trim()) errs.name = 'اسم المحل مطلوب'
-      if (type === null) errs.type = 'نوع النشاط مطلوب'
+      if (!type) errs.type = 'نوع النشاط مطلوب'
+      else if (type === OTHER_TYPE && !customType.trim()) errs.type = 'يرجى كتابة نوع النشاط'
       if (!form.phone.trim()) errs.phone = 'رقم الهاتف مطلوب'
       else if (!isValidIraqiPhone(form.phone)) errs.phone = 'رقم هاتف صحيح مطلوب'
       if (!form.owner.trim()) errs.owner = 'اسم صاحب المحل مطلوب'
@@ -67,7 +73,7 @@ export default function Register() {
     setLoading(true)
     const data = {
       name: form.name.trim(),
-      type: type !== null ? BUSINESS_TYPES[type].label : BUSINESS_TYPES[0].label,
+      type: type === OTHER_TYPE ? customType.trim() : type,
       phone: form.phone.trim(),
       owner: form.owner.trim(),
       password: form.pass,
@@ -114,35 +120,48 @@ export default function Register() {
           <>
             <div>
               <label className="mb-1.5 block text-xs font-bold">اسم المحل / المطعم</label>
-              <input className="field" placeholder="مثال: مطعمك أو محلك التجاري" value={form.name} onChange={(e) => set('name', e.target.value)} />
+              <input className="field" placeholder="اسم المحل / المطعم" value={form.name} onChange={(e) => set('name', e.target.value)} />
               {errors.name && <p className="mt-1 text-[11px] font-bold text-danger">⚠ {errors.name}</p>}
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-bold">نوع النشاط التجاري</label>
-              <div className="grid grid-cols-2 gap-2">
-                {BUSINESS_TYPES.map((t, i) => {
-                  const Icon = typeIcons[i]
-                  return (
-                    <button
-                      key={t.label}
-                      type="button"
-                      onClick={() => {
-                        setType(i)
-                        setErrors((e) => {
-                          const n = { ...e }
-                          delete n.type
-                          return n
-                        })
-                      }}
-                      className={`flex items-center gap-2 rounded-2xl border px-3.5 py-3 text-xs font-bold transition-all ${
-                        type === i ? 'border-gold bg-gold-soft text-gold-deep' : 'border-line bg-white text-mute'
-                      }`}
-                    >
-                      <Icon className="h-4 w-4" /> {t.label}
-                    </button>
-                  )
-                })}
-              </div>
+              <select
+                className="field cursor-pointer"
+                value={type}
+                onChange={(e) => {
+                  setType(e.target.value)
+                  setErrors((er) => {
+                    const n = { ...er }
+                    delete n.type
+                    return n
+                  })
+                }}
+              >
+                <option value="" disabled>
+                  اختر نوع النشاط
+                </option>
+                {BUSINESS_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+                <option value={OTHER_TYPE}>{OTHER_TYPE}</option>
+              </select>
+              {type === OTHER_TYPE && (
+                <input
+                  className="field mt-2"
+                  placeholder="اكتب نوع النشاط"
+                  value={customType}
+                  onChange={(e) => {
+                    setCustomType(e.target.value)
+                    setErrors((er) => {
+                      const n = { ...er }
+                      delete n.type
+                      return n
+                    })
+                  }}
+                />
+              )}
               {errors.type && <p className="mt-1 text-[11px] font-bold text-danger">⚠ {errors.type}</p>}
             </div>
             <div>
@@ -251,7 +270,7 @@ export default function Register() {
             <div className="card divide-y divide-line">
               {[
                 ['اسم المحل', form.name],
-                ['نوع النشاط', type !== null ? BUSINESS_TYPES[type].label : '—'],
+                ['نوع النشاط', type ? (type === OTHER_TYPE ? customType.trim() : type) : '—'],
                 ['رقم الهاتف', `+964 ${form.phone}`],
                 ['صاحب المحل', form.owner],
                 ['المحافظة', form.gov || '—'],

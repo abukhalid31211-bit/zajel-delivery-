@@ -25,6 +25,23 @@ const LS = {
 const SESSION_MINUTES = 30
 const REVIEW_SECONDS = 6 // مدة المراجعة الآلية لطلب التسجيل (تُستبدل بقرار الإدارة عبر الـ API)
 
+/* حساب محل تنفيذي/تجريبي — يُستخدم للدخول مباشرة دون Backend (لا يُعرض في الواجهة) */
+const DEMO_PHONE = '7803302376'
+const DEMO_PASSWORD = '12345678'
+const DEMO_PROFILE: StoreProfile = {
+  name: 'محل زاجل',
+  type: 'مطعم',
+  phone: DEMO_PHONE,
+  owner: 'صاحب المحل',
+  password: DEMO_PASSWORD,
+  address: 'بغداد',
+  governorate: 'بغداد',
+  location: null,
+  status: 'approved',
+  submittedAt: nowIso(),
+  approvedAt: nowIso(),
+}
+
 /* أسطول الكباتن المتاح في النظام — يُجلب من الـ API لاحقاً */
 const CAPTAINS: Captain[] = [
   { id: 'c1', name: 'كرار الموسوي', phone: '+9647701112233', rating: 4.8, vehicle: 'دراجة نارية', plate: 'بغداد 4521', online: true },
@@ -203,6 +220,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   /* ---------------- المصادقة ---------------- */
   const login: StoreContextValue['login'] = (phone, password) => {
     const clean = phone.replace(/[\s-]/g, '')
+    // الدخول بالحساب التنفيذي الجاهز بدون الحاجة لتسجيل مسبق
+    if (clean === DEMO_PHONE && password === DEMO_PASSWORD) {
+      if (!profile || profile.phone.replace(/[\s-]/g, '') !== DEMO_PHONE) {
+        setProfile({ ...DEMO_PROFILE })
+      }
+      startSession()
+      return { ok: true }
+    }
     if (!profile) return { ok: false, error: 'لا يوجد حساب مرتبط بهذا الرقم. سجّل محلك أولاً.' }
     if (profile.phone.replace(/[\s-]/g, '') !== clean) return { ok: false, error: 'لا يوجد حساب مرتبط بهذا الرقم.' }
     if (profile.password !== password) return { ok: false, error: 'كلمة المرور غير صحيحة.' }
