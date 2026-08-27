@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import AdminLayout from './layouts/AdminLayout'
+import RequireAuth from './components/RequireAuth'
+import RequirePerm from './components/RequirePerm'
 import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import Dashboard from './pages/Dashboard'
@@ -13,6 +15,7 @@ import Settlement from './pages/Settlement'
 import Notifications from './pages/Notifications'
 import Complaints from './pages/Complaints'
 import CMS from './pages/CMS'
+import CmsEditor from './pages/CmsEditor'
 import Admins from './pages/Admins'
 import AuditLog from './pages/AuditLog'
 import Settings from './pages/Settings'
@@ -30,7 +33,15 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
-      <Route element={<AdminLayout />}>
+      <Route
+        element={
+          <RequireAuth>
+            <RequirePerm>
+              <AdminLayout />
+            </RequirePerm>
+          </RequireAuth>
+        }
+      >
         <Route path="/" element={<Dashboard />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="/orders/details" element={<OrderDetails />} />
@@ -46,6 +57,7 @@ export default function App() {
         <Route path="/complaints" element={<Complaints />} />
         <Route path="/complaints/details" element={<ComplaintDetails />} />
         <Route path="/cms" element={<CMS />} />
+        <Route path="/cms/editor" element={<CmsEditor />} />
         <Route path="/admins" element={<Admins />} />
         <Route path="/audit-log" element={<AuditLog />} />
         <Route path="/settings" element={<Settings />} />

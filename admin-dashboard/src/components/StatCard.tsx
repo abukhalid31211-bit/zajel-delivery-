@@ -6,15 +6,21 @@ export default function StatCard({
   value,
   sub,
   alert = false,
+  onClick,
 }: {
   icon: LucideIcon
   label: string
   value: string
   sub?: string
   alert?: boolean
+  onClick?: () => void
 }) {
   return (
-    <div className="card group cursor-pointer p-5 transition-all hover:-translate-y-0.5 hover:shadow-md">
+    <button
+      type="button"
+      onClick={onClick}
+      className="card group w-full cursor-pointer p-5 text-right transition-all hover:-translate-y-0.5 hover:shadow-md"
+    >
       <div className="flex items-start justify-between">
         <div>
           <p className="text-xs font-medium text-mute">{label}</p>
@@ -29,6 +35,6 @@ export default function StatCard({
           <Icon className={`h-5 w-5 ${alert ? 'text-black' : 'text-white'}`} strokeWidth={1.8} />
         </div>
       </div>
-    </div>
+    </button>
   )
 }

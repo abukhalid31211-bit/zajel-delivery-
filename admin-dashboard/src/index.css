@@ -46,8 +46,8 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  background: #000;
-  color: #fff;
+  background: var(--color-btn, #000);
+  color: var(--color-btn-text, #fff);
   font-weight: 600;
   border-radius: 12px;
   padding: 0.625rem 1.25rem;
@@ -71,10 +71,10 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  background: #fff;
-  color: #000;
+  background: var(--color-paper, #fff);
+  color: var(--color-ink, #000);
   font-weight: 600;
-  border: 1px solid #000;
+  border: 1px solid var(--color-btn, #000);
   border-radius: 12px;
   padding: 0.625rem 1.25rem;
   font-size: 0.875rem;
@@ -145,6 +145,29 @@ body {
   }
 }
 
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-8px);
+  }
+  40% {
+    transform: translateX(8px);
+  }
+  60% {
+    transform: translateX(-6px);
+  }
+  80% {
+    transform: translateX(6px);
+  }
+}
+
 @utility animate-fade-up {
   animation: fadeUp 0.35s ease both;
+}
+
+@utility animate-shake {
+  animation: shake 0.45s ease;
 }
