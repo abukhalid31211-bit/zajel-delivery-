@@ -10,19 +10,19 @@ export default function Support() {
 
       <div className="animate-fade-up flex-1 space-y-5 px-5 py-6">
         <div className="grid grid-cols-2 gap-3">
-          <a href="tel:+964" className="card flex flex-col items-center gap-2 p-5 text-center transition-transform active:scale-[0.98]">
+          <a href="tel:07888216090" className="card flex flex-col items-center gap-2 p-5 text-center transition-transform active:scale-[0.98]">
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gold text-white shadow shadow-gold/25">
               <Phone className="h-5 w-5" strokeWidth={1.8} />
             </span>
             <p className="text-xs font-extrabold">اتصال هاتفي</p>
-            <p className="text-[10px] text-mute">تواصل مباشر مع الإدارة</p>
+            <p className="text-[10px] text-mute">7 888 216 090 / 7 770 969 045</p>
           </a>
-          <a href="https://wa.me/964" target="_blank" rel="noreferrer" className="card flex flex-col items-center gap-2 p-5 text-center transition-transform active:scale-[0.98]">
+          <a href="https://wa.me/9647888216090" target="_blank" rel="noreferrer" className="card flex flex-col items-center gap-2 p-5 text-center transition-transform active:scale-[0.98]">
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gold text-white shadow shadow-gold/25">
               <MessageCircle className="h-5 w-5" strokeWidth={1.8} />
             </span>
             <p className="text-xs font-extrabold">واتساب</p>
-            <p className="text-[10px] text-mute">مراسلة فريق الدعم</p>
+            <p className="text-[10px] text-mute">7 888 216 090 / 7 770 969 045</p>
           </a>
         </div>
 

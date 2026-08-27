@@ -135,7 +135,7 @@ interface AppState {
 const STORAGE_KEY = 'zajel-captain-state-v1'
 
 /** حساب كابتن تجريبي/تنفيذي — يُستخدم للدخول مباشرة دون Backend */
-const DEMO_PHONE = '7803302376'
+const DEMO_PHONE = '7888216090'
 const DEMO_PASS = '12345678'
 const DEMO_NAME = 'كابتن زاجل'
 

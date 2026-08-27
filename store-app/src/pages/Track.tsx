@@ -304,7 +304,7 @@ export default function Track() {
             ↩️ تسجيل مرتجع
           </button>
         )}
-        <a href="tel:+964" className="flex items-center justify-center gap-1.5 rounded-2xl bg-gold py-3.5 text-xs font-bold text-white">
+        <a href="tel:07888216090" className="flex items-center justify-center gap-1.5 rounded-2xl bg-gold py-3.5 text-xs font-bold text-white">
           <Headphones className="h-4 w-4" /> تواصل مع الدعم
         </a>
       </div>

@@ -28,7 +28,7 @@ export function Suspended() {
             <p className="mt-1 text-[11px] leading-relaxed text-mute">{profile.rejectionReason}</p>
           </div>
         )}
-        <a href="tel:+964" className="btn-primary w-full">
+        <a href="tel:07888216090" className="btn-primary w-full">
           <Phone className="h-4 w-4" /> 📞 تواصل مع الإدارة
         </a>
         <button className="btn-secondary w-full" onClick={() => navigate('/orders')}>
@@ -69,7 +69,7 @@ export function Rejected() {
         <button className="btn-primary w-full" onClick={() => navigate('/register')}>
           تقديم طلب جديد
         </button>
-        <a href="tel:+964" className="btn-secondary w-full">
+        <a href="tel:07888216090" className="btn-secondary w-full">
           <Phone className="h-4 w-4" /> تواصل مع الدعم
         </a>
       </div>
@@ -110,7 +110,7 @@ export function Maintenance() {
         <p className="max-w-72 text-[13px] leading-relaxed text-mute">
           نعتذر عن الإزعاج. النظام في وضع صيانة مؤقت ولا يمكن إنشاء طلبات جديدة. سنعود قريباً.
         </p>
-        <a href="tel:+964" className="btn-secondary w-full">
+        <a href="tel:07888216090" className="btn-secondary w-full">
           <Phone className="h-4 w-4" /> تواصل مع الدعم
         </a>
       </div>
