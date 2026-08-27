@@ -9,6 +9,8 @@ import { useToast } from '../components/Toast'
 import { useDbList, logAudit } from '../lib/store'
 import { uid } from '../lib/db'
 import { getSettings, saveSettings } from '../lib/settings'
+import OtherField, { OtherOption } from '../components/OtherOption'
+import { ensureOtherDistrict, isOther } from '../lib/customOption'
 import type { District, GeoPrice, Governorate, PriceRoute } from '../lib/types'
 
 export default function Pricing() {
@@ -28,6 +30,10 @@ export default function Pricing() {
   const [price, setPrice] = useState('')
   const [perKm, setPerKm] = useState('')
   const [districtId, setDistrictId] = useState('')
+  /* «أخرى»: أسماء المناطق الجديدة المكتوبة يدوياً */
+  const [otherFrom, setOtherFrom] = useState('')
+  const [otherTo, setOtherTo] = useState('')
+  const [otherGeo, setOtherGeo] = useState('')
   const [editId, setEditId] = useState<string | null>(null)
   const [editPrice, setEditPrice] = useState('')
   const [err, setErr] = useState('')
@@ -38,14 +44,32 @@ export default function Pricing() {
   const saveRoute = () => {
     if (!fromId || !toId) return setErr('اختر منطقتي الانطلاق والوصول')
     if (fromId === toId) return setErr('منطقة الانطلاق والوصول يجب أن تكونا مختلفتين')
-    if (routes.items.some((r) => r.fromId === fromId && r.toId === toId)) return setErr('هذا المسار موجود بالفعل. عدّل السعر بدلاً من ذلك.')
     if (!price) return setErr('السعر مطلوب')
-    routes.setItems((p) => [...p, { id: uid(), govId, fromId, toId, price }])
+    let from = fromId
+    let to = toId
+    if (isOther(from) || isOther(to)) {
+      if (!govId) return setErr('اختر المحافظة أولاً لحفظ المنطقة الجديدة فيها')
+      if (isOther(from)) {
+        const id = ensureOtherDistrict(districts.items, districts.setItems, otherFrom, govId)
+        if (!id) return setErr('اكتب اسم منطقة الانطلاق الجديدة')
+        from = id
+      }
+      if (isOther(to)) {
+        const id = ensureOtherDistrict(districts.items, districts.setItems, otherTo, govId)
+        if (!id) return setErr('اكتب اسم منطقة الوصول الجديدة')
+        to = id
+      }
+      if (from === to) return setErr('منطقة الانطلاق والوصول يجب أن تكونا مختلفتين')
+    }
+    if (routes.items.some((r) => r.fromId === from && r.toId === to)) return setErr('هذا المسار موجود بالفعل. عدّل السعر بدلاً من ذلك.')
+    routes.setItems((p) => [...p, { id: uid(), govId, fromId: from, toId: to, price }])
     logAudit({ action: 'تعديل سعر', entity: 'مسار', details: 'إضافة مسار سعري', oldValue: '—', newValue: price })
     setAddRoute(false)
     setPrice('')
     setFromId('')
     setToId('')
+    setOtherFrom('')
+    setOtherTo('')
     setErr('')
     toast('تمت إضافة المسار')
   }
@@ -100,7 +124,7 @@ export default function Pricing() {
                 ))}
               </select>
             </div>
-            <button className="btn-primary" onClick={() => { setAddRoute(true); setErr('') }}>+ إضافة مسار سعري جديد</button>
+            <button className="btn-primary" onClick={() => { setAddRoute(true); setOtherFrom(''); setOtherTo(''); setErr('') }}>+ إضافة مسار سعري جديد</button>
           </div>
           <DataTable
             columns={['منطقة الانطلاق', '←', 'منطقة الوصول', 'السعر (د.ع)', 'الإجراءات']}
@@ -153,7 +177,7 @@ export default function Pricing() {
                 ))}
               </select>
             </div>
-            <button className="btn-primary" onClick={() => setAddGeo(true)}>+ إضافة منطقة سعرية</button>
+            <button className="btn-primary" onClick={() => { setAddGeo(true); setOtherGeo('') }}>+ إضافة منطقة سعرية</button>
           </div>
           <MapCanvas
             governorate={govs.items.find((g) => g.id === govId)?.name ?? null}
@@ -190,14 +214,34 @@ export default function Pricing() {
               <select className="field cursor-pointer" value={fromId} onChange={(e) => setFromId(e.target.value)}>
                 <option value="">{zoneDistricts.length ? 'اختر' : 'لا توجد مناطق معرفة'}</option>
                 {zoneDistricts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                <OtherOption label="➕ أخرى — منطقة جديدة" />
               </select>
+              {isOther(fromId) && (
+                <OtherField
+                  label="اسم منطقة الانطلاق"
+                  placeholder="اكتب اسم المنطقة لحفظها واختيارها"
+                  value={otherFrom}
+                  onChange={setOtherFrom}
+                  hint="تُحفظ في «المناطق والجغرافيا» ضمن المحافظة المختارة."
+                />
+              )}
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-semibold">منطقة الوصول (إلى)</label>
               <select className="field cursor-pointer" value={toId} onChange={(e) => setToId(e.target.value)}>
                 <option value="">{zoneDistricts.length ? 'اختر' : 'لا توجد مناطق معرفة'}</option>
                 {zoneDistricts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                <OtherOption label="➕ أخرى — منطقة جديدة" />
               </select>
+              {isOther(toId) && (
+                <OtherField
+                  label="اسم منطقة الوصول"
+                  placeholder="اكتب اسم المنطقة لحفظها واختيارها"
+                  value={otherTo}
+                  onChange={setOtherTo}
+                  hint="تُحفظ في «المناطق والجغرافيا» ضمن المحافظة المختارة."
+                />
+              )}
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-semibold">سعر التوصيل (بالدينار العراقي)</label>
@@ -215,10 +259,22 @@ export default function Pricing() {
       {addGeo && (
         <Modal title="إضافة منطقة سعرية" onClose={() => setAddGeo(false)}>
           <div className="mt-4 space-y-3">
-            <select className="field cursor-pointer" value={districtId} onChange={(e) => setDistrictId(e.target.value)}>
-              <option value="">اختر المنطقة</option>
-              {zoneDistricts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-            </select>
+            <div>
+              <select className="field cursor-pointer" value={districtId} onChange={(e) => setDistrictId(e.target.value)}>
+                <option value="">اختر المنطقة</option>
+                {zoneDistricts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                <OtherOption label="➕ أخرى — منطقة جديدة" />
+              </select>
+              {isOther(districtId) && (
+                <OtherField
+                  label="اسم المنطقة"
+                  placeholder="اكتب اسم المنطقة لحفظها واختيارها"
+                  value={otherGeo}
+                  onChange={setOtherGeo}
+                  hint="تُحفظ في «المناطق والجغرافيا» ضمن المحافظة المختارة."
+                />
+              )}
+            </div>
             <input className="field" placeholder="السعر الأساسي" value={price} onChange={(e) => setPrice(e.target.value.replace(/[^\d]/g, ''))} />
             <input className="field" placeholder="سعر إضافي لكل كم" value={perKm} onChange={(e) => setPerKm(e.target.value.replace(/[^\d]/g, ''))} />
           </div>
@@ -227,10 +283,18 @@ export default function Pricing() {
               className="btn-primary flex-1"
               disabled={!districtId || !price}
               onClick={() => {
-                geoPrices.setItems((p) => [...p, { id: uid(), districtId, base: price, perKm: perKm || '0' }])
+                let zoneId = districtId
+                if (isOther(districtId)) {
+                  if (!govId) return toast('اختر المحافظة أولاً لحفظ المنطقة الجديدة فيها')
+                  const id = ensureOtherDistrict(districts.items, districts.setItems, otherGeo, govId)
+                  if (!id) return toast('اكتب اسم المنطقة الجديدة')
+                  zoneId = id
+                }
+                geoPrices.setItems((p) => [...p, { id: uid(), districtId: zoneId, base: price, perKm: perKm || '0' }])
                 setAddGeo(false)
                 setPrice('')
                 setPerKm('')
+                setOtherGeo('')
                 toast('تمت إضافة المنطقة السعرية')
               }}
             >

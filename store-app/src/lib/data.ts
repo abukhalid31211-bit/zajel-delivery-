@@ -153,6 +153,46 @@ export const BUSINESS_TYPES = [
 /** قيمة خاصة تُظهر حقل إدخال حر عند اختيارها في القائمة */
 export const OTHER_TYPE = 'أخرى'
 
+/** قيمة خيار «أخرى» في أي قائمة منسدلة (نفس OTHER_TYPE) */
+export const OTHER = OTHER_TYPE
+
+/** هل اختار المستخدم «أخرى» في القائمة المنسدلة؟ */
+export const isOther = (value?: string | null) => value === OTHER
+
+const CUSTOM_TYPES_KEY = 'zajel_custom_business_types'
+
+/** أنواع النشاط التي أضافها المستخدم عبر «أخرى» — محفوظة محلياً */
+export function customBusinessTypes(): string[] {
+  try {
+    const raw = localStorage.getItem(CUSTOM_TYPES_KEY)
+    const list = raw ? (JSON.parse(raw) as unknown) : []
+    return Array.isArray(list) ? list.filter((x): x is string => typeof x === 'string' && x.trim().length > 0) : []
+  } catch {
+    return []
+  }
+}
+
+/** كل أنواع النشاط في القائمة المنسدلة: القائمة المعتمدة + ما أضافه المستخدم */
+export function businessTypeOptions(): string[] {
+  const extra = customBusinessTypes().filter((t) => !BUSINESS_TYPES.includes(t))
+  return [...BUSINESS_TYPES, ...extra]
+}
+
+/** يحفظ نوع نشاط جديد كُتب في «أخرى» ليعيد الظهور في القائمة — ويعيد الاسم نظيفاً */
+export function rememberBusinessType(name: string): string {
+  const nm = name.trim()
+  if (!nm) return nm
+  const list = customBusinessTypes()
+  if (!list.includes(nm) && !BUSINESS_TYPES.includes(nm)) {
+    try {
+      localStorage.setItem(CUSTOM_TYPES_KEY, JSON.stringify([...list, nm]))
+    } catch {
+      /* تجاهل أخطاء التخزين المحلي */
+    }
+  }
+  return nm
+}
+
 export const GOVERNORATES = [
   'بغداد', 'البصرة', 'نينوى', 'أربيل', 'النجف', 'كربلاء', 'كركوك', 'الأنبار', 'ديالى', 'واسط',
   'ميسان', 'ذي قار', 'المثنى', 'القادسية', 'بابل', 'صلاح الدين', 'دهوك', 'السليمانية',
