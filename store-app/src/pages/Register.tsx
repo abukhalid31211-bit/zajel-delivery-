@@ -1,169 +1,262 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Check, Loader2, MapPin, LocateFixed, Pizza, ShoppingCart, Pill, ShoppingBag } from 'lucide-react'
+import { Check, Loader2, LocateFixed, Pizza, ShoppingCart, Pill, ShoppingBag } from 'lucide-react'
+import { useStore } from '../lib/StoreContext'
+import { BUSINESS_TYPES, GOVERNORATES, zoneFor, isValidIraqiPhone } from '../lib/data'
+import { LocationPicker, DEFAULT_CENTER, zoneRing } from '../lib/MapLib'
+import Stepper from '../components/Stepper'
+import type { LatLng } from '../lib/data'
 
-const types = [
-  { icon: Pizza, label: 'مطعم 🍕' },
-  { icon: ShoppingCart, label: 'سوبرماركت 🛒' },
-  { icon: Pill, label: 'صيدلية 💊' },
-  { icon: ShoppingBag, label: 'محل تجاري 🛍️' },
-]
-
-const governorates = [
-  'بغداد', 'البصرة', 'نينوى', 'أربيل', 'النجف', 'كربلاء', 'كركوك', 'الأنبار', 'ديالى', 'واسط',
-  'ميسان', 'ذي قار', 'المثنى', 'القادسية', 'بابل', 'صلاح الدين', 'دهوك', 'السليمانية',
-]
+const typeIcons = [Pizza, ShoppingCart, Pill, ShoppingBag]
 
 export default function Register() {
   const navigate = useNavigate()
+  const { profile, registerStore, resubmit } = useStore()
+  const isResubmit = profile?.status === 'rejected'
+
   const [step, setStep] = useState(1)
   const [type, setType] = useState<number | null>(null)
-  const [pinned, setPinned] = useState(false)
+  const [pinned, setPinned] = useState<LatLng | null>(profile?.location ?? null)
   const [loading, setLoading] = useState(false)
-  const [form, setForm] = useState({ name: '', phone: '', owner: '', gov: '', address: '', pass: '', confirm: '' })
-  const [error, setError] = useState('')
+  const [form, setForm] = useState({
+    name: isResubmit ? profile?.name ?? '' : '',
+    phone: isResubmit ? profile?.phone ?? '' : '',
+    owner: isResubmit ? profile?.owner ?? '' : '',
+    gov: isResubmit ? profile?.governorate ?? '' : '',
+    address: isResubmit ? profile?.address ?? '' : '',
+    pass: '',
+    confirm: '',
+  })
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const zone = pinned ? zoneFor(pinned) : null
+
+  const set = (k: string, v: string) => {
+    setForm((f) => ({ ...f, [k]: v }))
+    setErrors((e) => {
+      const n = { ...e }
+      delete n[k]
+      return n
+    })
+  }
 
   const next = () => {
+    const errs: Record<string, string> = {}
     if (step === 1) {
-      if (!form.name || type === null || !form.phone || !form.owner || !form.pass) return setError('يرجى ملء جميع الحقول المطلوبة')
-      if (form.pass.length < 6) return setError('كلمة المرور يجب أن تكون 6 أحرف على الأقل')
-      if (form.pass !== form.confirm) return setError('كلمة المرور غير متطابقة')
+      if (!form.name.trim()) errs.name = 'اسم المحل مطلوب'
+      if (type === null) errs.type = 'نوع النشاط مطلوب'
+      if (!form.phone.trim()) errs.phone = 'رقم الهاتف مطلوب'
+      else if (!isValidIraqiPhone(form.phone)) errs.phone = 'رقم هاتف صحيح مطلوب'
+      if (!form.owner.trim()) errs.owner = 'اسم صاحب المحل مطلوب'
+      if (!form.pass) errs.pass = 'كلمة المرور مطلوبة'
+      else if (form.pass.length < 6) errs.pass = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'
+      if (form.pass !== form.confirm) errs.confirm = 'كلمة المرور غير متطابقة'
     }
     if (step === 2) {
-      if (!pinned) return setError('يرجى تحديد موقع المحل على الخريطة')
-      if (!form.address || !form.gov) return setError('يرجى إدخال العنوان التفصيلي واختيار المحافظة')
+      if (!pinned) errs.map = 'يرجى تحديد موقع المحل على الخريطة'
+      if (!form.address.trim()) errs.address = 'العنوان التفصيلي مطلوب'
+      if (!form.gov) errs.gov = 'اختر المحافظة'
     }
-    setError('')
+    setErrors(errs)
+    if (Object.keys(errs).length) return
     setStep((s) => s + 1)
+    window.scrollTo(0, 0)
   }
 
   const submit = () => {
     setLoading(true)
-    setTimeout(() => navigate('/pending'), 1200)
+    const data = {
+      name: form.name.trim(),
+      type: type !== null ? BUSINESS_TYPES[type].label : BUSINESS_TYPES[0].label,
+      phone: form.phone.trim(),
+      owner: form.owner.trim(),
+      password: form.pass,
+      address: form.address.trim(),
+      governorate: form.gov,
+      location: pinned,
+    }
+    setTimeout(() => {
+      if (isResubmit) resubmit(data)
+      else registerStore(data)
+      navigate('/pending', { replace: true })
+    }, 1100)
   }
 
   return (
     <div className="app-shell">
-      <div className="sticky top-0 z-10 border-b border-line bg-white px-4 py-4">
+      <div className="sticky top-0 z-20 border-b border-line bg-white/95 px-4 py-4 backdrop-blur">
         <div className="flex items-center gap-3">
-          <button onClick={() => (step > 1 ? setStep(step - 1) : navigate('/welcome'))} className="flex h-9 w-9 items-center justify-center rounded-xl border border-line">
-            <ArrowRight className="h-4.5 w-4.5" />
+          <button
+            onClick={() => (step > 1 ? setStep(step - 1) : navigate('/welcome'))}
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-line"
+          >
+            <span className="text-sm font-bold">→</span>
           </button>
-          <h1 className="text-base font-bold">تسجيل محل جديد</h1>
+          <div className="flex-1">
+            <h1 className="text-base font-extrabold">{isResubmit ? 'إعادة تقديم طلب التسجيل' : 'تسجيل محل جديد'}</h1>
+          </div>
         </div>
-        <div className="mt-4 flex items-center gap-2">
-          {['بيانات المحل', 'الموقع', 'المراجعة'].map((label, i) => (
-            <div key={label} className="flex flex-1 flex-col items-center gap-1.5">
-              <div className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold ${step > i + 1 ? 'bg-black text-white' : step === i + 1 ? 'border-2 border-black bg-white' : 'border border-line bg-white text-faint'}`}>
-                {step > i + 1 ? <Check className="h-3.5 w-3.5" /> : i + 1}
-              </div>
-              <span className={`text-[10px] font-semibold ${step === i + 1 ? 'text-black' : 'text-faint'}`}>{label}</span>
-            </div>
-          ))}
+        <div className="mt-4">
+          <Stepper steps={['بيانات المحل', 'الموقع', 'المراجعة']} current={step} />
         </div>
       </div>
+
+      {isResubmit && profile?.rejectionReason && (
+        <div className="border-b border-gold/30 bg-gold-faint px-5 py-3">
+          <p className="text-[11px] font-bold leading-relaxed text-gold-deep">
+            ⚠️ تم رفض طلبك السابق — السبب: {profile.rejectionReason}. يمكنك تعديل البيانات وإعادة التقديم.
+          </p>
+        </div>
+      )}
 
       <div className="animate-fade-up flex-1 space-y-4 px-5 py-5" key={step}>
         {step === 1 && (
           <>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold">اسم المحل / المطعم</label>
-              <input className="field" placeholder="مثال: مطعمك أو محلك التجاري" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <label className="mb-1.5 block text-xs font-bold">اسم المحل / المطعم</label>
+              <input className="field" placeholder="مثال: مطعمك أو محلك التجاري" value={form.name} onChange={(e) => set('name', e.target.value)} />
+              {errors.name && <p className="mt-1 text-[11px] font-bold text-danger">⚠ {errors.name}</p>}
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold">نوع النشاط التجاري</label>
+              <label className="mb-1.5 block text-xs font-bold">نوع النشاط التجاري</label>
               <div className="grid grid-cols-2 gap-2">
-                {types.map((t, i) => (
-                  <button
-                    key={t.label}
-                    type="button"
-                    onClick={() => setType(i)}
-                    className={`flex items-center gap-2 rounded-2xl border px-3.5 py-3 text-xs font-semibold transition-all ${type === i ? 'border-black bg-black text-white' : 'border-line bg-white text-mute'}`}
-                  >
-                    <t.icon className="h-4 w-4" /> {t.label}
-                  </button>
-                ))}
+                {BUSINESS_TYPES.map((t, i) => {
+                  const Icon = typeIcons[i]
+                  return (
+                    <button
+                      key={t.label}
+                      type="button"
+                      onClick={() => {
+                        setType(i)
+                        setErrors((e) => {
+                          const n = { ...e }
+                          delete n.type
+                          return n
+                        })
+                      }}
+                      className={`flex items-center gap-2 rounded-2xl border px-3.5 py-3 text-xs font-bold transition-all ${
+                        type === i ? 'border-gold bg-gold-soft text-gold-deep' : 'border-line bg-white text-mute'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" /> {t.label}
+                    </button>
+                  )
+                })}
               </div>
+              {errors.type && <p className="mt-1 text-[11px] font-bold text-danger">⚠ {errors.type}</p>}
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold">رقم الهاتف</label>
+              <label className="mb-1.5 block text-xs font-bold">رقم الهاتف</label>
               <div className="flex" dir="ltr">
-                <span className="flex items-center rounded-l-2xl border border-r-0 border-line bg-white px-3 text-sm font-semibold text-mute">+964</span>
-                <input className="field rounded-l-none" placeholder="7XX XXX XXXX" inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                <span className="flex items-center rounded-l-2xl border border-r-0 border-line bg-gold-faint px-3 text-sm font-bold text-gold-deep">+964</span>
+                <input className="field rounded-l-none" placeholder="7XX XXX XXXX" inputMode="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} />
               </div>
+              {errors.phone && <p className="mt-1 text-[11px] font-bold text-danger">⚠ {errors.phone}</p>}
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold">اسم صاحب المحل</label>
-              <input className="field" placeholder="الاسم الكامل" value={form.owner} onChange={(e) => setForm({ ...form, owner: e.target.value })} />
+              <label className="mb-1.5 block text-xs font-bold">اسم صاحب المحل</label>
+              <input className="field" placeholder="الاسم الكامل" value={form.owner} onChange={(e) => set('owner', e.target.value)} />
+              {errors.owner && <p className="mt-1 text-[11px] font-bold text-danger">⚠ {errors.owner}</p>}
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold">كلمة المرور</label>
-              <input type="password" className="field" value={form.pass} onChange={(e) => setForm({ ...form, pass: e.target.value })} />
+              <label className="mb-1.5 block text-xs font-bold">كلمة المرور</label>
+              <input type="password" className="field" placeholder="6 أحرف على الأقل" value={form.pass} onChange={(e) => set('pass', e.target.value)} />
+              {errors.pass && <p className="mt-1 text-[11px] font-bold text-danger">⚠ {errors.pass}</p>}
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold">تأكيد كلمة المرور</label>
-              <input type="password" className="field" value={form.confirm} onChange={(e) => setForm({ ...form, confirm: e.target.value })} />
+              <label className="mb-1.5 block text-xs font-bold">تأكيد كلمة المرور</label>
+              <input type="password" className="field" placeholder="أعد إدخال كلمة المرور" value={form.confirm} onChange={(e) => set('confirm', e.target.value)} />
+              {errors.confirm && <p className="mt-1 text-[11px] font-bold text-danger">⚠ {errors.confirm}</p>}
             </div>
           </>
         )}
 
         {step === 2 && (
           <>
-            <h2 className="text-sm font-bold">تحديد موقع المحل</h2>
-            <p className="-mt-2 text-xs leading-relaxed text-mute">سيتم استخدام الموقع لتحديد منطقة التوصيل وحساب الأجرة تلقائياً</p>
-            {/* map placeholder */}
-            <div
-              className="relative h-64 overflow-hidden rounded-3xl border border-line"
-              style={{
-                backgroundImage:
-                  'linear-gradient(#e6e6e6 1px, transparent 1px), linear-gradient(90deg, #e6e6e6 1px, transparent 1px)',
-                backgroundSize: '28px 28px',
-                backgroundColor: '#fafafa',
+            <div>
+              <h2 className="section-title">تحديد موقع المحل</h2>
+              <p className="mt-1 text-xs leading-relaxed text-mute">سيتم استخدام الموقع لتحديد منطقة التوصيل وحساب الأجرة تلقائياً</p>
+            </div>
+
+            <LocationPicker
+              value={pinned ?? DEFAULT_CENTER}
+              onChange={(pos) => {
+                setPinned(pos)
+                setErrors((e) => {
+                  const n = { ...e }
+                  delete n.map
+                  return n
+                })
               }}
+              height={250}
+              zones={zone ? [zoneRing(zone.center, zone.radiusKm)] : []}
             >
-              <button
-                onClick={() => setPinned(true)}
-                className="absolute inset-0 flex flex-col items-center justify-center gap-2"
-              >
-                <MapPin className={`h-10 w-10 transition-all ${pinned ? 'scale-110 fill-black text-black' : 'text-faint'}`} strokeWidth={1.5} />
-                <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-bold shadow-sm">
-                  {pinned ? '✓ تم تثبيت الموقع' : 'اضغط لتثبيت الدبوس على موقع محلك'}
-                </span>
-              </button>
-              <button
-                onClick={() => setPinned(true)}
-                className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-xl bg-black px-3 py-2 text-[11px] font-bold text-white shadow-lg"
-              >
-                <LocateFixed className="h-3.5 w-3.5" /> استخدام موقعي الحالي
-              </button>
+              <div className="pointer-events-none absolute bottom-3 right-3 z-[500]">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    navigator.geolocation?.getCurrentPosition(
+                      (pos) => {
+                        setPinned({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+                      },
+                      () => {
+                        setErrors((er) => ({ ...er, map: 'لم نتمكن من تحديد موقعك. يرجى تحريك الخريطة يدوياً' }))
+                      },
+                      { timeout: 8000 },
+                    )
+                  }}
+                  className="pointer-events-auto flex items-center gap-1.5 rounded-xl bg-gold px-3 py-2 text-[11px] font-bold text-white shadow-lg"
+                >
+                  <LocateFixed className="h-3.5 w-3.5" /> استخدام موقعي الحالي
+                </button>
+              </div>
+            </LocationPicker>
+
+            {errors.map && <p className="text-[11px] font-bold text-danger">⚠ {errors.map}</p>}
+
+            {pinned && (
+              <div className={`animate-fade-up rounded-2xl border p-3.5 text-[11px] font-bold leading-relaxed ${zone ? 'border-gold/50 bg-gold-faint text-gold-deep' : 'border-dashed border-danger/50 bg-danger/5 text-danger'}`}>
+                {zone ? (
+                  <>محلك يقع في منطقة: <b>{zone.name} — {zone.governorate}</b> ✅</>
+                ) : (
+                  <>⚠️ موقعك خارج المناطق المحددة. تواصل مع الإدارة.</>
+                )}
+              </div>
+            )}
+
+            <div>
+              <label className="mb-1.5 block text-xs font-bold">العنوان التفصيلي</label>
+              <input className="field" placeholder="المحافظة، المنطقة، اسم الشارع، أقرب نقطة دالة" value={form.address} onChange={(e) => set('address', e.target.value)} />
+              {errors.address && <p className="mt-1 text-[11px] font-bold text-danger">⚠ {errors.address}</p>}
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold">العنوان التفصيلي</label>
-              <input className="field" placeholder="المحافظة، المنطقة، اسم الشارع، أقرب نقطة دالة" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold">المحافظة</label>
-              <select className="field cursor-pointer" value={form.gov} onChange={(e) => setForm({ ...form, gov: e.target.value })}>
-                <option value="" disabled>اختر المحافظة</option>
-                {governorates.map((g) => (
+              <label className="mb-1.5 block text-xs font-bold">المحافظة</label>
+              <select className="field cursor-pointer" value={form.gov} onChange={(e) => set('gov', e.target.value)}>
+                <option value="" disabled>
+                  {zone ? `تحدد تلقائياً: ${zone.governorate}` : 'اختر المحافظة'}
+                </option>
+                {GOVERNORATES.map((g) => (
                   <option key={g}>{g}</option>
                 ))}
               </select>
+              {errors.gov && <p className="mt-1 text-[11px] font-bold text-danger">⚠ {errors.gov}</p>}
             </div>
           </>
         )}
 
         {step === 3 && (
           <>
-            <h2 className="text-sm font-bold">مراجعة البيانات قبل الإرسال</h2>
+            <h2 className="section-title">مراجعة البيانات قبل الإرسال</h2>
             <div className="card divide-y divide-line">
               {[
                 ['اسم المحل', form.name],
-                ['نوع النشاط', type !== null ? types[type].label : '—'],
+                ['نوع النشاط', type !== null ? BUSINESS_TYPES[type].label : '—'],
                 ['رقم الهاتف', `+964 ${form.phone}`],
                 ['صاحب المحل', form.owner],
-                ['المحافظة', form.gov],
+                ['المحافظة', form.gov || '—'],
                 ['العنوان التفصيلي', form.address],
+                ['منطقة التغطية', zone ? `${zone.name} ✅` : pinned ? 'خارج المناطق ⚠️' : '—'],
                 ['الموقع على الخريطة', pinned ? 'محدد ✓' : '—'],
               ].map(([k, v]) => (
                 <div key={k} className="flex items-center justify-between gap-3 px-4 py-3">
@@ -177,8 +270,6 @@ export default function Register() {
             </p>
           </>
         )}
-
-        {error && <p className="rounded-xl border border-black bg-white px-4 py-3 text-xs font-semibold">⚠ {error}</p>}
       </div>
 
       <div className="border-t border-line bg-white px-5 py-4">
@@ -188,7 +279,15 @@ export default function Register() {
           </button>
         ) : (
           <button className="btn-primary w-full" onClick={submit} disabled={loading}>
-            {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> جاري إرسال طلبك...</> : 'إرسال الطلب ✅'}
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> جاري إرسال طلبك...
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4" /> إرسال الطلب ✅
+              </>
+            )}
           </button>
         )}
       </div>
