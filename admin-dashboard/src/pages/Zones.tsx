@@ -193,6 +193,7 @@ export default function Zones() {
           </div>
           <MapCanvas
             points={geoDistrict?.points || []}
+            zones={districts.items.filter((d) => d.id !== geoId).map((d) => d.points).filter((p) => p.length > 2)}
             onChange={(pts) => {
               if (!geoDistrict) return
               districts.setItems((p) => p.map((x) => (x.id === geoDistrict.id ? { ...x, points: pts } : x)))

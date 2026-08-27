@@ -1,10 +1,11 @@
+export type LatLng = { lat: number; lng: number }
 export type Governorate = { id: string; name: string; enabled: boolean }
 export type District = {
   id: string
   govId: string
   name: string
   enabled: boolean
-  points: { x: number; y: number }[]
+  points: LatLng[]
 }
 export type PriceRoute = { id: string; govId: string; fromId: string; toId: string; price: string }
 export type GeoPrice = { id: string; districtId: string; base: string; perKm: string }
