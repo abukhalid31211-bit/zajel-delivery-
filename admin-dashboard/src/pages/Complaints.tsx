@@ -1,12 +1,14 @@
+import { useNavigate } from 'react-router-dom'
 import { MessageSquareWarning } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import FilterBar from '../components/FilterBar'
 import DataTable from '../components/DataTable'
 
 export default function Complaints() {
+  const navigate = useNavigate()
   return (
     <div>
-      <PageHeader title="الشكاوى والمشاكل" subtitle="إدارة ومتابعة شكاوى الكباتن والمحلات والنزاعات" />
+      <PageHeader title="الشكاوى والمشاكل" subtitle="إدارة ومتابعة شكاوى الكباتن والمحلات والنزاعات" actions={<button className="btn-ghost" onClick={() => navigate('/complaints/details')}>👁️ معاينة تفاصيل الشكوى</button>} />
       <FilterBar
         searchPlaceholder="رقم الشكوى أو رقم الطلب..."
         selects={[

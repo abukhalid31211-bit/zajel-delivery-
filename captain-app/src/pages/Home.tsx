@@ -95,6 +95,12 @@ export default function Home() {
           <p className="max-w-60 text-[11px] leading-relaxed text-mute">
             اتصل وكن داخل وقت شفتك وستصلك الطلبيات الجديدة هنا فوراً مع تنبيه صوتي.
           </p>
+          <button
+            onClick={() => navigate('/order-alert')}
+            className="mt-1 rounded-xl border border-dashed border-black px-4 py-2 text-[11px] font-bold transition-colors active:bg-page"
+          >
+            👁️ معاينة تدفق تنفيذ الطلبية
+          </button>
         </div>
       </div>
 

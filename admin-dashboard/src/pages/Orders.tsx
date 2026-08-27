@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Package, AlertTriangle } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import FilterBar from '../components/FilterBar'
@@ -8,9 +9,18 @@ const tabs = ['الكل', 'نشطة', 'مكتملة', 'ملغاة', 'عالقة 
 
 export default function Orders() {
   const [tab, setTab] = useState(0)
+  const navigate = useNavigate()
   return (
     <div>
-      <PageHeader title="إدارة الطلبيات" subtitle="مراقبة وإدارة جميع طلبيات التوصيل في النظام لحظة بلحظة" />
+      <PageHeader
+        title="إدارة الطلبيات"
+        subtitle="مراقبة وإدارة جميع طلبيات التوصيل في النظام لحظة بلحظة"
+        actions={
+          <button className="btn-ghost" onClick={() => navigate('/orders/details')}>
+            👁️ معاينة صفحة تفاصيل الطلب
+          </button>
+        }
+      />
 
       <div className="mb-5 flex flex-wrap gap-2">
         {tabs.map((t, i) => (

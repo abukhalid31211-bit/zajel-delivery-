@@ -10,22 +10,24 @@ import {
   LogOut,
   ChevronLeft,
   MapPin,
+  Trash2,
 } from 'lucide-react'
 
 const groups = [
   {
     title: 'الحساب',
     items: [
-      { icon: FileEdit, label: 'تعديل بيانات المحل' },
-      { icon: KeyRound, label: 'تغيير كلمة المرور' },
+      { icon: FileEdit, label: 'تعديل بيانات المحل', to: '/edit-store' },
+      { icon: KeyRound, label: 'تغيير كلمة المرور', to: '/change-password' },
     ],
   },
   {
     title: 'عام',
     items: [
-      { icon: Globe, label: 'تغيير اللغة — العربية' },
-      { icon: Headphones, label: 'المساعدة والدعم' },
-      { icon: Info, label: 'معلومات التطبيق — الإصدار 1.0.0' },
+      { icon: Globe, label: 'تغيير اللغة — العربية', to: '/language' },
+      { icon: Headphones, label: 'المساعدة والدعم', to: '/support' },
+      { icon: Info, label: 'معلومات التطبيق — الإصدار 1.0.0', to: '/about' },
+      { icon: Trash2, label: 'حذف الحساب', to: '/delete-account' },
     ],
   },
 ]
@@ -63,7 +65,11 @@ export default function Profile() {
           <p className="mb-2 px-1 text-[11px] font-bold text-faint">{g.title}</p>
           <div className="card divide-y divide-line overflow-hidden">
             {g.items.map((item) => (
-              <button key={item.label} className="flex w-full items-center gap-3.5 px-4 py-3.5 text-right transition-colors active:bg-page">
+              <button
+                key={item.label}
+                onClick={() => navigate(item.to)}
+                className="flex w-full items-center gap-3.5 px-4 py-3.5 text-right transition-colors active:bg-page"
+              >
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-page">
                   <item.icon className="h-4.5 w-4.5" strokeWidth={1.7} />
                 </span>

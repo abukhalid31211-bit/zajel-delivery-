@@ -12,6 +12,7 @@ import {
   LogOut,
   ChevronLeft,
   Star,
+  Trash2,
 } from 'lucide-react'
 
 const groups = [
@@ -19,17 +20,18 @@ const groups = [
     title: 'الحساب',
     items: [
       { icon: CalendarClock, label: 'تغيير الشفت', to: '/shift' },
-      { icon: KeyRound, label: 'تغيير كلمة المرور' },
-      { icon: FileUp, label: 'تحديث الوثائق' },
-      { icon: BarChart3, label: 'إحصائياتي' },
+      { icon: KeyRound, label: 'تغيير كلمة المرور', to: '/change-password' },
+      { icon: FileUp, label: 'تحديث الوثائق', to: '/documents' },
+      { icon: BarChart3, label: 'إحصائياتي', to: '/stats' },
     ],
   },
   {
     title: 'عام',
     items: [
-      { icon: Globe, label: 'تغيير اللغة — العربية' },
-      { icon: Headphones, label: 'المساعدة والدعم' },
-      { icon: Info, label: 'معلومات التطبيق — الإصدار 1.0.0' },
+      { icon: Globe, label: 'تغيير اللغة — العربية', to: '/language' },
+      { icon: Headphones, label: 'المساعدة والدعم', to: '/support' },
+      { icon: Info, label: 'معلومات التطبيق — الإصدار 1.0.0', to: '/about' },
+      { icon: Trash2, label: 'حذف الحساب', to: '/delete-account' },
     ],
   },
 ]
@@ -82,7 +84,7 @@ export default function Profile() {
             {g.items.map((item) => (
               <button
                 key={item.label}
-                onClick={() => 'to' in item && item.to && navigate(item.to)}
+                onClick={() => navigate(item.to)}
                 className="flex w-full items-center gap-3.5 px-4 py-3.5 text-right transition-colors active:bg-page"
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-page">

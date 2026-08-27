@@ -102,7 +102,11 @@ export default function AdminLayout() {
           </button>
           <div className="relative hidden max-w-md flex-1 md:block">
             <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" />
-            <input className="field bg-page pr-9" placeholder="ابحث عن طلب، كابتن، محل، رقم هاتف..." />
+            <input
+              className="field bg-page pr-9"
+              placeholder="ابحث عن طلب، كابتن، محل، رقم هاتف... (Enter للبحث المتقدم)"
+              onKeyDown={(e) => e.key === 'Enter' && navigate('/search')}
+            />
           </div>
           <div className="flex-1 md:hidden" />
           <button className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-line transition-colors hover:bg-page">

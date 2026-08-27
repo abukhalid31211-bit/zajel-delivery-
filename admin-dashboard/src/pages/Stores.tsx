@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Store, UserPlus, FileEdit } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import FilterBar from '../components/FilterBar'
@@ -12,9 +13,10 @@ const tabs = [
 
 export default function Stores() {
   const [tab, setTab] = useState(0)
+  const navigate = useNavigate()
   return (
     <div>
-      <PageHeader title="المحلات والمطاعم" subtitle="إدارة حسابات المحلات، الموافقات، ومراجعة التعديلات الحساسة" />
+      <PageHeader title="المحلات والمطاعم" subtitle="إدارة حسابات المحلات، الموافقات، ومراجعة التعديلات الحساسة" actions={<button className="btn-ghost" onClick={() => navigate('/stores/profile')}>👁️ معاينة ملف المحل</button>} />
 
       <div className="mb-5 flex flex-wrap gap-2">
         {tabs.map((t, i) => (

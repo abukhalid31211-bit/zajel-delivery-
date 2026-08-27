@@ -3,6 +3,8 @@ import { Map, MapPin, PencilRuler } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import DataTable from '../components/DataTable'
 import EmptyState from '../components/EmptyState'
+import Modal from '../components/Modal'
+import { useToast } from '../components/Toast'
 
 const tabs = [
   { label: 'المحافظات', icon: Map },
@@ -12,6 +14,10 @@ const tabs = [
 
 export default function Zones() {
   const [tab, setTab] = useState(0)
+  const [addGov, setAddGov] = useState(false)
+  const [addDistrict, setAddDistrict] = useState(false)
+  const [name, setName] = useState('')
+  const { toast, node } = useToast()
   return (
     <div>
       <PageHeader
@@ -19,9 +25,9 @@ export default function Zones() {
         subtitle="إدارة المحافظات العراقية والمناطق التابعة لها ورسم الحدود الجغرافية"
         actions={
           tab === 0 ? (
-            <button className="btn-primary">+ إضافة محافظة</button>
+            <button className="btn-primary" onClick={() => setAddGov(true)}>+ إضافة محافظة</button>
           ) : tab === 1 ? (
-            <button className="btn-primary">+ إضافة منطقة جديدة</button>
+            <button className="btn-primary" onClick={() => setAddDistrict(true)}>+ إضافة منطقة جديدة</button>
           ) : undefined
         }
       />
@@ -92,6 +98,62 @@ export default function Zones() {
           </div>
         </div>
       )}
+
+      {addGov && (
+        <Modal title="إضافة محافظة" onClose={() => setAddGov(false)}>
+          <div className="mt-4 space-y-3">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold">اسم المحافظة</label>
+              <input className="field" placeholder="مثال: بغداد" value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+            <label className="flex items-center gap-2 text-xs font-semibold">
+              <input type="checkbox" defaultChecked className="h-4 w-4 accent-black" /> مفعّلة
+            </label>
+          </div>
+          <div className="mt-4 flex gap-2">
+            <button
+              className="btn-primary flex-1"
+              disabled={!name.trim()}
+              onClick={() => { setAddGov(false); setName(''); toast('تمت إضافة المحافظة بنجاح ✅') }}
+            >
+              حفظ
+            </button>
+            <button className="btn-ghost flex-1" onClick={() => setAddGov(false)}>إلغاء</button>
+          </div>
+        </Modal>
+      )}
+
+      {addDistrict && (
+        <Modal title="إضافة منطقة جديدة" onClose={() => setAddDistrict(false)}>
+          <div className="mt-4 space-y-3">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold">اسم المنطقة</label>
+              <input className="field" placeholder="اسم المنطقة الإدارية" value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold">المحافظة</label>
+              <select className="field cursor-pointer text-mute" defaultValue="">
+                <option value="" disabled>لا توجد محافظات معرفة — أضف محافظة أولاً</option>
+              </select>
+            </div>
+            <label className="flex items-center gap-2 text-xs font-semibold">
+              <input type="checkbox" defaultChecked className="h-4 w-4 accent-black" /> مفعّلة
+            </label>
+          </div>
+          <div className="mt-4 flex gap-2">
+            <button
+              className="btn-primary flex-1"
+              disabled={!name.trim()}
+              onClick={() => { setAddDistrict(false); setName(''); toast('تمت إضافة المنطقة بنجاح ✅') }}
+            >
+              حفظ
+            </button>
+            <button className="btn-ghost flex-1" onClick={() => setAddDistrict(false)}>إلغاء</button>
+          </div>
+        </Modal>
+      )}
+
+      {node}
     </div>
   )
 }

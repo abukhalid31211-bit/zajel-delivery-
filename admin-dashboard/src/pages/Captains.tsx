@@ -1,8 +1,11 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Bike, UserPlus, CalendarClock, ClipboardCheck } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import FilterBar from '../components/FilterBar'
 import DataTable from '../components/DataTable'
+import Modal from '../components/Modal'
+import { useToast } from '../components/Toast'
 
 const tabs = [
   { label: 'قائمة الكباتن', icon: Bike },
@@ -13,12 +16,16 @@ const tabs = [
 
 export default function Captains() {
   const [tab, setTab] = useState(0)
+  const navigate = useNavigate()
+  const [addShift, setAddShift] = useState(false)
+  const [shiftName, setShiftName] = useState('')
+  const { toast, node } = useToast()
   return (
     <div>
       <PageHeader
         title="إدارة الكباتن"
         subtitle="الموافقات، الملفات، الشفتات وسجل الحضور لجميع كباتن التوصيل"
-        actions={<button className="btn-primary">+ إضافة كابتن يدوياً</button>}
+        actions={<><button className="btn-ghost" onClick={() => navigate('/captains/profile')}>👁️ معاينة ملف الكابتن</button><button className="btn-primary">+ إضافة كابتن يدوياً</button></>}
       />
 
       <div className="mb-5 flex flex-wrap gap-2">
@@ -70,7 +77,7 @@ export default function Captains() {
             <p className="text-xs leading-relaxed text-mute">
               حدد أوقات العمل المتاحة للكباتن. الكابتن يختار شفتاً واحداً أسبوعياً ولا يستطيع تغييره إلا مرة واحدة خلال الأسبوع.
             </p>
-            <button className="btn-primary shrink-0">+ إضافة شفت جديد</button>
+            <button className="btn-primary shrink-0" onClick={() => setAddShift(true)}>+ إضافة شفت جديد</button>
           </div>
           <DataTable
             columns={['اسم الشفت', 'وقت البداية', 'وقت النهاية', 'المدة', 'عدد الكباتن', 'الحالة', 'الإجراءات']}
@@ -92,6 +99,41 @@ export default function Captains() {
           />
         </>
       )}
+
+      {addShift && (
+        <Modal title="إضافة شفت جديد" onClose={() => setAddShift(false)}>
+          <div className="mt-4 space-y-3">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold">اسم الشفت</label>
+              <input className="field" placeholder="مثال: الشفت الصباحي" value={shiftName} onChange={(e) => setShiftName(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold">وقت البداية</label>
+                <input type="time" className="field cursor-pointer" />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold">وقت النهاية</label>
+                <input type="time" className="field cursor-pointer" />
+              </div>
+            </div>
+            <label className="flex items-center gap-2 text-xs font-semibold">
+              <input type="checkbox" defaultChecked className="h-4 w-4 accent-black" /> نشط
+            </label>
+            <p className="rounded-xl border border-dashed border-black px-3 py-2 text-[10px] font-semibold leading-relaxed">
+              ⚠️ وقت النهاية يجب أن يكون بعد البداية (الشفتات الليلية الممتدة عبر منتصف الليل مدعومة). التداخل بين الشفتات مسموح تقنياً مع تحذير.
+            </p>
+          </div>
+          <div className="mt-4 flex gap-2">
+            <button className="btn-primary flex-1" disabled={!shiftName.trim()} onClick={() => { setAddShift(false); setShiftName(''); toast('تمت إضافة الشفت بنجاح ✅') }}>
+              حفظ
+            </button>
+            <button className="btn-ghost flex-1" onClick={() => setAddShift(false)}>إلغاء</button>
+          </div>
+        </Modal>
+      )}
+
+      {node}
     </div>
   )
 }

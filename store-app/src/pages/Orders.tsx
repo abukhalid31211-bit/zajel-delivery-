@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Search, PackageSearch } from 'lucide-react'
 
 const tabs = ['الكل', 'نشطة', 'مكتملة', 'ملغاة']
 
 export default function Orders() {
+  const navigate = useNavigate()
   const [tab, setTab] = useState(0)
   return (
     <div className="px-5 pt-6">
@@ -36,6 +38,20 @@ export default function Orders() {
         <p className="max-w-64 text-[11px] leading-relaxed text-mute">
           سيظهر هنا سجل كامل بجميع طلبياتك مع الحالة والكابتن والقيمة والأجرة وتاريخ كل طلب.
         </p>
+        <div className="mt-1 flex flex-wrap justify-center gap-2">
+          <button
+            onClick={() => navigate('/track')}
+            className="rounded-xl border border-dashed border-black px-3.5 py-2 text-[11px] font-bold transition-colors active:bg-page"
+          >
+            👁️ معاينة المتابعة الحية
+          </button>
+          <button
+            onClick={() => navigate('/order-details')}
+            className="rounded-xl border border-dashed border-black px-3.5 py-2 text-[11px] font-bold transition-colors active:bg-page"
+          >
+            👁️ معاينة تفاصيل طلب مكتمل
+          </button>
+        </div>
       </div>
     </div>
   )

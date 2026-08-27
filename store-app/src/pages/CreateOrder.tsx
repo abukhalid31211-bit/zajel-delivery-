@@ -8,6 +8,7 @@ export default function CreateOrder() {
   const [pinned, setPinned] = useState(false)
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
+  const [preferCaptain, setPreferCaptain] = useState(false)
   const [form, setForm] = useState({ name: '', phone: '', notes: '', address: '', district: '', value: '', orderNotes: '' })
   const [error, setError] = useState('')
 
@@ -47,7 +48,7 @@ export default function CreateOrder() {
           </div>
           <span className="badge bg-faint text-white">🟡 بانتظار كابتن</span>
           <div className="mt-4 w-full space-y-3">
-            <button className="btn-primary w-full" onClick={() => navigate('/orders')}>
+            <button className="btn-primary w-full" onClick={() => navigate('/track')}>
               📋 متابعة الطلب
             </button>
             <button className="btn-secondary w-full" onClick={() => navigate('/home')}>
@@ -157,6 +158,24 @@ export default function CreateOrder() {
             <div>
               <label className="mb-1.5 block text-xs font-semibold">ملاحظات الطلب (اختياري)</label>
               <textarea className="field min-h-20 resize-none" placeholder="أي تفاصيل إضافية عن الطلب..." value={form.orderNotes} onChange={(e) => setForm({ ...form, orderNotes: e.target.value })} />
+            </div>
+
+            <div className="card p-4">
+              <button onClick={() => setPreferCaptain((v) => !v)} className="flex w-full items-center justify-between">
+                <span className="text-xs font-bold">🔘 طلب كابتن محدد (اختياري)</span>
+                <span className={`relative h-6 w-11 rounded-full transition-colors ${preferCaptain ? 'bg-black' : 'bg-line'}`}>
+                  <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${preferCaptain ? 'right-0.5' : 'right-[22px]'}`} />
+                </span>
+              </button>
+              {preferCaptain && (
+                <div className="animate-fade-up mt-3 rounded-xl border border-dashed border-line p-4 text-center">
+                  <p className="text-[11px] font-bold">اختر كابتناً من قائمتك المفضلة</p>
+                  <p className="mt-1 text-[10px] leading-relaxed text-mute">
+                    تظهر هنا قائمة آخر 5 كباتن تعاملت معهم مع تقييمهم وحالة اتصالهم (🟢 متاح / 🔴 غير متاح).
+                    لا يوجد كباتن سابقون بعد — سيُرسل الطلب للطابور العام.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="card divide-y divide-line">

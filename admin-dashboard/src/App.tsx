@@ -17,28 +17,40 @@ import Admins from './pages/Admins'
 import AuditLog from './pages/AuditLog'
 import Settings from './pages/Settings'
 import Profile from './pages/Profile'
+import OrderDetails from './pages/OrderDetails'
+import CaptainProfile from './pages/CaptainProfile'
+import StoreProfile from './pages/StoreProfile'
+import ComplaintDetails from './pages/ComplaintDetails'
+import AdvancedSearch from './pages/AdvancedSearch'
+import Unauthorized from './pages/Unauthorized'
 
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/unauthorized" element={<Unauthorized />} />
       <Route element={<AdminLayout />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/orders" element={<Orders />} />
+        <Route path="/orders/details" element={<OrderDetails />} />
         <Route path="/captains" element={<Captains />} />
+        <Route path="/captains/profile" element={<CaptainProfile />} />
         <Route path="/stores" element={<Stores />} />
+        <Route path="/stores/profile" element={<StoreProfile />} />
         <Route path="/zones" element={<Zones />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/settlement" element={<Settlement />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/complaints" element={<Complaints />} />
+        <Route path="/complaints/details" element={<ComplaintDetails />} />
         <Route path="/cms" element={<CMS />} />
         <Route path="/admins" element={<Admins />} />
         <Route path="/audit-log" element={<AuditLog />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/search" element={<AdvancedSearch />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
