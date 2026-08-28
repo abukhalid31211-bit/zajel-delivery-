@@ -10,7 +10,7 @@ import StatusBadge from '../components/StatusBadge'
 import { useToast } from '../components/Toast'
 import { useDbList, logAudit, STORE_TYPES } from '../lib/store'
 import { formatDate, uid, nowIso } from '../lib/db'
-import { can, inGeoScope } from '../lib/rbac'
+import { can, inGeoScope, inGovScope, inStoreScope } from '../lib/rbac'
 import OtherField, { OtherOption } from '../components/OtherOption'
 import { ensureOtherDistrict, isOther, otherName } from '../lib/customOption'
 import type { District, Governorate, OrderItem, StoreChange, StoreItem } from '../lib/types'
@@ -37,9 +37,11 @@ export default function Stores() {
   const [filters, setFilters] = useState<Filters>(emptyFilters())
   const [loading, setLoading] = useState(false)
   const orders = useDbList<OrderItem>('orders').items
+  const scopedGovs = govs.items.filter((g) => inGovScope(g.id))
+  const scopedDistricts = districts.items.filter((d) => inGeoScope(d.govId, d.id))
 
   const list = useMemo(() => {
-    let rows = stores.items.filter((s) => inGeoScope(s.govId))
+    let rows = stores.items.filter((s) => inStoreScope(s))
     if (tab === 1) rows = rows.filter((s) => s.status === 'بانتظار الموافقة')
     if (filters.q.trim()) rows = rows.filter((s) => `${s.name} ${s.phone}`.includes(filters.q.trim()))
     const ty = sel(filters, 'النوع')
@@ -93,8 +95,8 @@ export default function Stores() {
             selects={[
               { label: 'النوع', options: STORE_TYPES },
               { label: 'الحالة', options: ['نشط', 'بانتظار الموافقة', 'موقوف'] },
-              { label: 'المحافظة', options: govs.items.map((g) => g.name) },
-              { label: 'المنطقة', options: districts.items.map((d) => d.name) },
+              { label: 'المحافظة', options: scopedGovs.map((g) => g.name) },
+              { label: 'المنطقة', options: scopedDistricts.map((d) => d.name) },
             ]}
             onChange={setFilters}
             onSearch={() => { setLoading(true); window.setTimeout(() => setLoading(false), 280) }}
@@ -159,13 +161,15 @@ export default function Stores() {
               s.phone,
               govs.items.find((g) => g.id === s.govId)?.name || '—',
               formatDate(s.createdAt),
-              <span className="flex gap-1">
-                <button className="btn-primary px-2 py-1 text-[10px]" onClick={() => {
-                  stores.setItems((p) => p.map((x) => (x.id === s.id ? { ...x, status: 'نشط' } : x)))
-                  toast('تمت الموافقة على المحل')
-                }}>موافقة</button>
-                <button className="btn-ghost px-2 py-1 text-[10px]" onClick={() => setReject(s)}>رفض</button>
-              </span>,
+              can('المحلات', 'موافقة') ? (
+                <span className="flex gap-1">
+                  <button className="btn-primary px-2 py-1 text-[10px]" onClick={() => {
+                    stores.setItems((p) => p.map((x) => (x.id === s.id ? { ...x, status: 'نشط' } : x)))
+                    toast('تمت الموافقة على المحل')
+                  }}>موافقة</button>
+                  <button className="btn-ghost px-2 py-1 text-[10px]" onClick={() => setReject(s)}>رفض</button>
+                </span>
+              ) : 'مشاهدة فقط',
             ],
           }))}
           emptyIcon={UserPlus}
@@ -177,7 +181,7 @@ export default function Stores() {
       {tab === 2 && (
         <DataTable
           columns={['اسم المحل', 'الحقل المعدل', 'القيمة السابقة', 'القيمة المقترحة', 'تاريخ الطلب', 'الإجراءات']}
-          rows={changes.items.map((c) => ({
+          rows={changes.items.filter((c) => inStoreScope(stores.items.find((s) => s.id === c.storeId))).map((c) => ({
             key: c.id,
             cells: [
               stores.items.find((s) => s.id === c.storeId)?.name || '—',
@@ -186,13 +190,15 @@ export default function Stores() {
               c.newValue,
               formatDate(c.createdAt),
               c.status === 'معلق' ? (
-                <span className="flex gap-1">
-                  <button className="btn-primary px-2 py-1 text-[10px]" onClick={() => {
-                    changes.setItems((p) => p.map((x) => (x.id === c.id ? { ...x, status: 'مقبول' } : x)))
-                    toast('تمت الموافقة وتحديث البيانات')
-                  }}>موافقة وتحديث</button>
-                  <button className="btn-ghost px-2 py-1 text-[10px]" onClick={() => setReject(c)}>رفض التعديل</button>
-                </span>
+                can('المحلات', 'موافقة') ? (
+                  <span className="flex gap-1">
+                    <button className="btn-primary px-2 py-1 text-[10px]" onClick={() => {
+                      changes.setItems((p) => p.map((x) => (x.id === c.id ? { ...x, status: 'مقبول' } : x)))
+                      toast('تمت الموافقة وتحديث البيانات')
+                    }}>موافقة وتحديث</button>
+                    <button className="btn-ghost px-2 py-1 text-[10px]" onClick={() => setReject(c)}>رفض التعديل</button>
+                  </span>
+                ) : 'مشاهدة فقط'
               ) : (
                 <StatusBadge status={c.status === 'مقبول' ? 'نشط' : 'مرفوض'} />
               ),
@@ -227,12 +233,12 @@ export default function Stores() {
             <input className="field sm:col-span-2" placeholder="العنوان التفصيلي" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
             <select className="field cursor-pointer" value={form.govId} onChange={(e) => setForm({ ...form, govId: e.target.value })}>
               <option value="">المحافظة</option>
-              {govs.items.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+              {scopedGovs.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
             </select>
             <div>
               <select className="field cursor-pointer" value={form.districtId} onChange={(e) => setForm({ ...form, districtId: e.target.value })}>
                 <option value="">المنطقة</option>
-                {districts.items.filter((d) => !form.govId || d.govId === form.govId).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                {scopedDistricts.filter((d) => !form.govId || d.govId === form.govId).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
                 <OtherOption label="➕ أخرى — منطقة جديدة" />
               </select>
               {isOther(form.districtId) && (

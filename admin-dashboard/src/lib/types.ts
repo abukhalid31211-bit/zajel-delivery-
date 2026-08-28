@@ -65,8 +65,14 @@ export type AdminUser = {
   role: string
   enabled: boolean
   lastLogin?: string
+  /** نطاق المحافظات المسموح لهذا الأدمن. فارغ = كل المحافظات */
   govIds: string[]
+  /** نطاق المناطق المسموح. فارغ = كل مناطق المحافظات المختارة */
   districtIds: string[]
+  /** محلات/مطاعم محددة فقط. فارغ = كل المحلات ضمن النطاق الجغرافي */
+  storeIds?: string[]
+  /** كباتن محددون فقط. فارغ = كل الكباتن ضمن النطاق الجغرافي */
+  captainIds?: string[]
   perms: Record<string, string[]>
 }
 export type SentNotification = {

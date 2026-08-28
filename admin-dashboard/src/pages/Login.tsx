@@ -69,7 +69,7 @@ export default function Login() {
       }
 
       if (isSuperLogin(d, password)) {
-        startSession(SUPER_PHONE, SUPER_NAME, 'Super Admin', { super: true, perms: {}, govIds: [], districtIds: [] })
+        startSession(SUPER_PHONE, SUPER_NAME, 'Super Admin', { super: true, perms: {}, govIds: [], districtIds: [], storeIds: [], captainIds: [] })
         logSecurity({ type: 'تسجيل دخول ناجح', user: SUPER_PHONE, result: 'نجاح', details: 'Super Admin' })
         const from = (location.state as { from?: string } | null)?.from || '/'
         navigate(from, { replace: true })
@@ -101,6 +101,8 @@ export default function Login() {
         perms: found.perms || {},
         govIds: found.govIds || [],
         districtIds: found.districtIds || [],
+        storeIds: found.storeIds || [],
+        captainIds: found.captainIds || [],
       })
       logSecurity({ type: 'تسجيل دخول ناجح', user: d, result: 'نجاح', details: found.role })
       const from = (location.state as { from?: string } | null)?.from || '/'

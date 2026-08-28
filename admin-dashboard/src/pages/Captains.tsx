@@ -17,7 +17,7 @@ import OtherField, { OtherOption } from '../components/OtherOption'
 import { ensureOtherShift, isOther, otherName } from '../lib/customOption'
 import { uid, nowIso, formatDate } from '../lib/db'
 import { isIraqMobile, digitsOnly } from '../lib/validate'
-import { can, inGeoScope } from '../lib/rbac'
+import { can, inCaptainScope, inGeoScope, inGovScope } from '../lib/rbac'
 import type { Captain, District, Governorate, Shift } from '../lib/types'
 
 const tabKeys = ['list', 'pending', 'shifts', 'attendance']
@@ -39,7 +39,7 @@ export default function Captains() {
   const [overlap, setOverlap] = useState(false)
   const [week, setWeek] = useState('الحالي')
   const [drawer, setDrawer] = useState<Shift | null>(null)
-  const [form, setForm] = useState({ name: '', phone: '', email: '', govId: '', vehicle: VEHICLES[0], shiftId: '' })
+  const [form, setForm] = useState({ name: '', phone: '', email: '', govId: '', districtIds: [] as string[], vehicle: VEHICLES[0], shiftId: '' })
   /* «أخرى»: مركبة باسم حرّ، وشفت جديد يُضاف لقائمة الشفتات */
   const [otherVehicle, setOtherVehicle] = useState('')
   const [otherShiftName, setOtherShiftName] = useState('')
@@ -51,9 +51,11 @@ export default function Captains() {
   const { toast, node } = useToast()
   const [filters, setFilters] = useState<Filters>(emptyFilters())
   const [loading, setLoading] = useState(false)
+  const scopedGovs = govs.items.filter((g) => inGovScope(g.id))
+  const scopedDistricts = districts.items.filter((d) => inGeoScope(d.govId, d.id))
 
   const list = useMemo(() => {
-    let rows = captains.items.filter((c) => inGeoScope(c.govId))
+    let rows = captains.items.filter((c) => inCaptainScope(c))
     if (tab === 1) rows = rows.filter((c) => c.status === 'بانتظار الموافقة')
     if (filters.q.trim()) rows = rows.filter((c) => `${c.name} ${c.phone}`.includes(filters.q.trim()))
     const st = sel(filters, 'الحالة')
@@ -94,7 +96,7 @@ export default function Captains() {
           <>
             <button className="btn-ghost" onClick={() => navigate('/captains/profile')}>👁️ معاينة ملف الكابتن</button>
             {can('الكباتن', 'إضافة') && (
-              <button className="btn-primary" onClick={() => { setAddCap(true); setErr(''); setOtherVehicle(''); setOtherShiftName('') }}>+ إضافة كابتن يدوياً</button>
+              <button className="btn-primary" onClick={() => { setAddCap(true); setErr(''); setOtherVehicle(''); setOtherShiftName(''); setForm({ name: '', phone: '', email: '', govId: '', districtIds: [], vehicle: VEHICLES[0], shiftId: '' }) }}>+ إضافة كابتن يدوياً</button>
             )}
           </>
         }
@@ -125,8 +127,8 @@ export default function Captains() {
             searchPlaceholder="ابحث بالاسم أو رقم الهاتف..."
             selects={[
               { label: 'الحالة', options: ['نشط', 'بانتظار الموافقة', 'موقوف', 'مرفوض'] },
-              { label: 'المحافظة', options: govs.items.map((g) => g.name) },
-              { label: 'المنطقة', options: districts.items.map((d) => d.name) },
+              { label: 'المحافظة', options: scopedGovs.map((g) => g.name) },
+              { label: 'المنطقة', options: scopedDistricts.map((d) => d.name) },
               { label: 'الشفت', options: shifts.items.map((s) => s.name) },
             ]}
             onChange={setFilters}
@@ -194,13 +196,15 @@ export default function Captains() {
               c.vehicle,
               'بانتظار الرفع',
               formatDate(c.createdAt),
-              <span className="flex gap-1">
-                <button className="btn-primary px-2 py-1 text-[10px]" onClick={() => {
-                  captains.setItems((p) => p.map((x) => (x.id === c.id ? { ...x, status: 'نشط' } : x)))
-                  toast('تمت الموافقة على الكابتن')
-                }}>موافقة</button>
-                <button className="btn-ghost px-2 py-1 text-[10px]" onClick={() => setReject(c)}>رفض</button>
-              </span>,
+              can('الكباتن', 'موافقة') ? (
+                <span className="flex gap-1">
+                  <button className="btn-primary px-2 py-1 text-[10px]" onClick={() => {
+                    captains.setItems((p) => p.map((x) => (x.id === c.id ? { ...x, status: 'نشط' } : x)))
+                    toast('تمت الموافقة على الكابتن')
+                  }}>موافقة</button>
+                  <button className="btn-ghost px-2 py-1 text-[10px]" onClick={() => setReject(c)}>رفض</button>
+                </span>
+              ) : 'مشاهدة فقط',
             ],
           }))}
           emptyIcon={UserPlus}
@@ -324,10 +328,22 @@ export default function Captains() {
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-semibold">المحافظة (ثابتة)</label>
-              <select className="field cursor-pointer" value={form.govId} onChange={(e) => setForm({ ...form, govId: e.target.value })}>
+              <select className="field cursor-pointer" value={form.govId} onChange={(e) => setForm({ ...form, govId: e.target.value, districtIds: [] })}>
                 <option value="">اختر</option>
-                {govs.items.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                {scopedGovs.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
               </select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold">مناطق عمل الكابتن</label>
+              <select
+                className="field min-h-24 cursor-pointer"
+                multiple
+                value={form.districtIds}
+                onChange={(e) => setForm({ ...form, districtIds: Array.from(e.target.selectedOptions).map((o) => o.value) })}
+              >
+                {scopedDistricts.filter((d) => !form.govId || d.govId === form.govId).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+              <p className="mt-1 text-[10px] text-faint">اختر منطقة أو أكثر حتى يظهر الكابتن لليدر المنطقة وتقاريرها.</p>
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-semibold">نوع المركبة</label>
@@ -378,6 +394,7 @@ export default function Captains() {
               onClick={() => {
                 if (!form.name.trim()) return setErr('الاسم مطلوب')
                 if (!isIraqMobile(form.phone)) return setErr('رقم الهاتف غير صالح')
+                if (!form.govId) return setErr('اختر محافظة الكابتن')
                 let vehicle = form.vehicle
                 if (isOther(vehicle)) {
                   const v = otherName(otherVehicle)
@@ -403,7 +420,7 @@ export default function Captains() {
                     phone: digitsOnly(form.phone),
                     email: form.email,
                     govId: form.govId,
-                    districtIds: [],
+                    districtIds: form.districtIds,
                     shiftId,
                     vehicle,
                     status: 'بانتظار الموافقة',
@@ -413,7 +430,7 @@ export default function Captains() {
                 ])
                 logAudit({ action: 'إضافة', entity: form.name, details: 'إضافة كابتن يدوياً', oldValue: '—', newValue: 'بانتظار الموافقة' })
                 setAddCap(false)
-                setForm({ name: '', phone: '', email: '', govId: '', vehicle: VEHICLES[0], shiftId: '' })
+                setForm({ name: '', phone: '', email: '', govId: '', districtIds: [], vehicle: VEHICLES[0], shiftId: '' })
                 setOtherVehicle('')
                 setOtherShiftName('')
                 toast('تم إنشاء حساب الكابتن بانتظار الموافقة')

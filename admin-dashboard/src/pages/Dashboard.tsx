@@ -7,7 +7,7 @@ import PageHeader from '../components/PageHeader'
 import StatusBadge from '../components/StatusBadge'
 import { useDbList } from '../lib/store'
 import { formatDate } from '../lib/db'
-import { inGeoScope } from '../lib/rbac'
+import { inCaptainScope, inOrderScope, inStoreScope } from '../lib/rbac'
 import { ACTIVE_STATUSES, isStuck } from '../lib/orders'
 import { useT } from '../lib/i18n'
 import type { Captain, OrderItem, StoreItem } from '../lib/types'
@@ -18,9 +18,9 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const t = useT()
   const [range, setRange] = useState(0)
-  const captains = useDbList<Captain>('captains').items.filter((c) => inGeoScope(c.govId))
-  const stores = useDbList<StoreItem>('stores').items.filter((s) => inGeoScope(s.govId))
-  const orders = useDbList<OrderItem>('orders').items.filter((o) => inGeoScope(o.govId))
+  const captains = useDbList<Captain>('captains').items.filter((c) => inCaptainScope(c))
+  const stores = useDbList<StoreItem>('stores').items.filter((s) => inStoreScope(s))
+  const orders = useDbList<OrderItem>('orders').items.filter((o) => inOrderScope(o))
   const today = new Date().toISOString().slice(0, 10)
   const todayOrders = orders.filter((o) => o.createdAt.slice(0, 10) === today)
   const active = orders.filter((o) => ACTIVE_STATUSES.includes(o.status))

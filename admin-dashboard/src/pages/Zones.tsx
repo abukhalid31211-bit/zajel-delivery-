@@ -12,6 +12,7 @@ import { useDbList, logAudit } from '../lib/store'
 import OtherField, { OtherOption } from '../components/OtherOption'
 import { ensureOtherDistrict, isOther, otherName } from '../lib/customOption'
 import { uid } from '../lib/db'
+import { can, inGeoScope, inGovScope } from '../lib/rbac'
 import type { District, Governorate } from '../lib/types'
 
 const tabKeys = ['gov', 'districts', 'geo']
@@ -35,15 +36,17 @@ export default function Zones() {
   const [otherGeoName, setOtherGeoName] = useState('')
   const [err, setErr] = useState('')
   const { toast, node } = useToast()
+  const scopedGovs = govs.items.filter((g) => inGovScope(g.id))
+  const scopedDistricts = districts.items.filter((d) => inGeoScope(d.govId, d.id))
 
   const filteredDistricts = useMemo(
-    () => districts.items.filter((d) => !govFilter || d.govId === govFilter),
-    [districts.items, govFilter],
+    () => scopedDistricts.filter((d) => !govFilter || d.govId === govFilter),
+    [scopedDistricts, govFilter],
   )
-  const geoDistrict = districts.items.find((d) => d.id === geoId)
+  const geoDistrict = scopedDistricts.find((d) => d.id === geoId)
   const geoDistricts = useMemo(
-    () => districts.items.filter((d) => !geoGovId || d.govId === geoGovId),
-    [districts.items, geoGovId],
+    () => scopedDistricts.filter((d) => !geoGovId || d.govId === geoGovId),
+    [scopedDistricts, geoGovId],
   )
   const geoGovName = govs.items.find((g) => g.id === geoGovId)?.name ?? null
 
@@ -90,9 +93,9 @@ export default function Zones() {
         title={tab === 1 && govFilter ? `إدارة المناطق — ${govs.items.find((g) => g.id === govFilter)?.name || ''}` : 'المناطق والجغرافيا'}
         subtitle="إدارة المحافظات العراقية والمناطق التابعة لها ورسم الحدود الجغرافية"
         actions={
-          tab === 0 ? (
+          tab === 0 && can('المناطق', 'إضافة') ? (
             <button className="btn-primary" onClick={() => { setAddGov(true); setName(''); setErr('') }}>+ إضافة محافظة</button>
-          ) : tab === 1 ? (
+          ) : tab === 1 && can('المناطق', 'إضافة') ? (
             <button className="btn-primary" onClick={() => { setAddDistrict(true); setName(''); setErr('') }}>+ إضافة منطقة جديدة</button>
           ) : undefined
         }
@@ -123,7 +126,7 @@ export default function Zones() {
       {tab === 0 && (
         <DataTable
           columns={['اسم المحافظة', 'عدد المناطق', 'الحالة', 'الإجراءات']}
-          rows={govs.items.map((g) => ({
+          rows={scopedGovs.map((g) => ({
             key: g.id,
             cells: [
               editing === g.id ? (
@@ -135,7 +138,7 @@ export default function Zones() {
               ) : (
                 g.name
               ),
-              String(districts.items.filter((d) => d.govId === g.id).length),
+              String(scopedDistricts.filter((d) => d.govId === g.id).length),
               <StatusBadge status={g.enabled ? 'مفعّلة' : 'متوقفة'} />,
               <span className="flex items-center gap-1">
                 <Toggle
@@ -163,7 +166,7 @@ export default function Zones() {
             <span className="text-xs font-semibold">اختر المحافظة:</span>
             <select className="field w-auto min-w-44 cursor-pointer" value={govFilter} onChange={(e) => setGovFilter(e.target.value)}>
               <option value="">كل المحافظات</option>
-              {govs.items.map((g) => (
+              {scopedGovs.map((g) => (
                 <option key={g.id} value={g.id}>{g.name}</option>
               ))}
             </select>
@@ -209,7 +212,7 @@ export default function Zones() {
               }}
             >
               <option value="">🗺️ العراق كامل</option>
-              {govs.items.map((g) => (
+              {scopedGovs.map((g) => (
                 <option key={g.id} value={g.id}>{g.name}</option>
               ))}
             </select>
@@ -260,7 +263,7 @@ export default function Zones() {
             governorate={geoGovName}
             tools={!!geoDistrict}
             points={geoDistrict?.points || []}
-            zones={districts.items.filter((d) => d.id !== geoId).map((d) => d.points).filter((p) => p.length > 2)}
+            zones={scopedDistricts.filter((d) => d.id !== geoId).map((d) => d.points).filter((p) => p.length > 2)}
             hint={
               !geoDistrict
                 ? '🗺️ هذه خريطة العراق الحقيقية — اختر المحافظة والمنطقة بالأعلى، وستنتقل الخريطة تلقائياً إلى المحافظة لبدء رسم حدود المنطقة.'
@@ -300,8 +303,8 @@ export default function Zones() {
             <div>
               <label className="mb-1.5 block text-xs font-semibold">المحافظة</label>
               <select className="field cursor-pointer" value={govFilter} onChange={(e) => setGovFilter(e.target.value)}>
-                <option value="">{govs.items.length ? 'اختر المحافظة' : 'لا توجد محافظات معرفة — أضف محافظة أولاً'}</option>
-                {govs.items.map((g) => (
+                <option value="">{scopedGovs.length ? 'اختر المحافظة' : 'لا توجد محافظات ضمن نطاقك'}</option>
+                {scopedGovs.map((g) => (
                   <option key={g.id} value={g.id}>{g.name}</option>
                 ))}
               </select>
