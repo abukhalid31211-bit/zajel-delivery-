@@ -9,7 +9,8 @@ import StatusBadge from '../components/StatusBadge'
 import MapCanvas from '../components/MapCanvas'
 import { useDbList, logAudit } from '../lib/store'
 import { formatDate } from '../lib/db'
-import type { AuditEntry, District, Governorate, StoreItem } from '../lib/types'
+import { can, inOrderScope, inStoreScope } from '../lib/rbac'
+import type { AuditEntry, District, Governorate, OrderItem, StoreItem } from '../lib/types'
 
 const tabs = [
   { label: 'الطلبات', icon: Package },
@@ -22,14 +23,16 @@ export default function StoreProfile() {
   const { toast, node } = useToast()
   const [params] = useSearchParams()
   const stores = useDbList<StoreItem>('stores')
-  const store = stores.items.find((s) => s.id === params.get('id'))
+  const store = stores.items.find((s) => s.id === params.get('id') && inStoreScope(s))
   const govs = useDbList<Governorate>('governorates')
   const districts = useDbList<District>('districts')
+  const orders = useDbList<OrderItem>('orders')
   const audit = useDbList<AuditEntry>('audit')
   const [tab, setTab] = useState(0)
   const [modal, setModal] = useState<'approve' | 'suspend' | null>(null)
   const [reason, setReason] = useState('')
   const name = store?.name || '— اسم المحل'
+  const storeOrders = orders.items.filter((o) => store && o.storeId === store.id && inOrderScope(o))
 
   return (
     <div>
@@ -57,13 +60,13 @@ export default function StoreProfile() {
             <div className="mt-2"><StatusBadge status={store?.status || 'بانتظار الموافقة'} /></div>
           </div>
           <div className="flex flex-wrap gap-2">
-            {(!store || store.status === 'بانتظار الموافقة') && (
+            {(!store || store.status === 'بانتظار الموافقة') && can('المحلات', 'موافقة') && (
               <button className="btn-primary" onClick={() => setModal('approve')}><CheckCircle2 className="h-4 w-4" /> موافقة</button>
             )}
-            {store?.status === 'نشط' && (
+            {store?.status === 'نشط' && can('المحلات', 'إيقاف') && (
               <button className="btn-ghost" onClick={() => setModal('suspend')}><Ban className="h-4 w-4" /> إيقاف</button>
             )}
-            {store?.status === 'موقوف' && (
+            {store?.status === 'موقوف' && can('المحلات', 'إيقاف') && (
               <button className="btn-primary" onClick={() => {
                 stores.setItems((p) => p.map((x) => (x.id === store.id ? { ...x, status: 'نشط' } : x)))
                 toast('تم تفعيل المحل')
@@ -93,6 +96,10 @@ export default function StoreProfile() {
       {tab === 0 && (
         <DataTable
           columns={['رقم الطلب', 'الزبون', 'الكابتن', 'الحالة', 'القيمة', 'الأجرة', 'التاريخ']}
+          rows={storeOrders.map((o) => ({
+            key: o.id,
+            cells: [o.number, o.customerName, o.captainName || '—', <StatusBadge status={o.status} />, `${o.value} د.ع`, `${o.fee} د.ع`, formatDate(o.createdAt)],
+          }))}
           emptyIcon={Package}
           emptyTitle="لا توجد طلبيات لهذا المحل"
           emptyHint="تظهر هنا جميع طلبيات المحل مع تفاصيلها الكاملة."
@@ -102,10 +109,16 @@ export default function StoreProfile() {
       {tab === 1 && (
         <div>
           <div className="mb-5 grid grid-cols-2 gap-4 md:grid-cols-5">
-            {['إجمالي الطلبات', 'المكتملة', 'الملغاة', 'متوسط قيمة الطلب', 'إجمالي أجور التوصيل'].map((l) => (
+            {[
+              ['إجمالي الطلبات', String(storeOrders.length)],
+              ['المكتملة', String(storeOrders.filter((o) => o.status === 'مكتمل').length)],
+              ['الملغاة', String(storeOrders.filter((o) => o.status === 'ملغي').length)],
+              ['متوسط قيمة الطلب', `${Math.round(storeOrders.reduce((n, o) => n + Number(o.value || 0), 0) / (storeOrders.length || 1))} د.ع`],
+              ['إجمالي أجور التوصيل', `${storeOrders.reduce((n, o) => n + Number(o.fee || 0), 0)} د.ع`],
+            ].map(([l, v]) => (
               <div key={l} className="card p-4">
                 <p className="text-[11px] font-medium text-mute">{l}</p>
-                <p className="mt-1.5 text-xl font-bold">—</p>
+                <p className="mt-1.5 text-xl font-bold">{v}</p>
               </div>
             ))}
           </div>

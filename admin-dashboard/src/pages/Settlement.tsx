@@ -9,17 +9,18 @@ import { useDbList, logAudit } from '../lib/store'
 import OtherField, { OtherOption } from '../components/OtherOption'
 import { isOther, otherName } from '../lib/customOption'
 import { dbGet, dbSet } from '../lib/db'
+import { inCaptainScope, inOrderScope } from '../lib/rbac'
 import type { Captain, OrderItem } from '../lib/types'
 
 type Row = { id: string; settled: boolean; amount: string; method: string; notes: string }
 
 export default function Settlement() {
-  const captains = useDbList<Captain>('captains').items.filter((c) => c.status === 'نشط')
-  const allOrders = useDbList<OrderItem>('orders').items
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const captains = useDbList<Captain>('captains').items.filter((c) => c.status === 'نشط' && inCaptainScope(c))
+  const allOrders = useDbList<OrderItem>('orders').items.filter((o) => inOrderScope(o))
   const dayOrders = allOrders.filter((o) => o.createdAt.slice(0, 10) === date && o.status === 'مكتمل')
   const sumFee = dayOrders.reduce((n, o) => n + Number(o.fee || 0), 0)
   const sumVal = dayOrders.reduce((n, o) => n + Number(o.value || 0), 0)
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [rows, setRows] = useState<Row[]>(() => dbGet<Row[]>(`settle-${new Date().toISOString().slice(0, 10)}`, []))
   const [open, setOpen] = useState<Captain | null>(null)
   const [amount, setAmount] = useState('')

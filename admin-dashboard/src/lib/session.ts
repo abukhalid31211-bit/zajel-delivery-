@@ -10,6 +10,8 @@ export type Session = {
   perms: Record<string, string[]>
   govIds: string[]
   districtIds: string[]
+  storeIds: string[]
+  captainIds: string[]
 }
 
 const KEY = 'session'
@@ -44,7 +46,7 @@ export function startSession(
   phone: string,
   name: string,
   role: string,
-  extra?: Partial<Pick<Session, 'super' | 'perms' | 'govIds' | 'districtIds'>>,
+  extra?: Partial<Pick<Session, 'super' | 'perms' | 'govIds' | 'districtIds' | 'storeIds' | 'captainIds'>>,
 ) {
   const s: Session = {
     phone,
@@ -56,6 +58,8 @@ export function startSession(
     perms: extra?.perms || {},
     govIds: extra?.govIds || [],
     districtIds: extra?.districtIds || [],
+    storeIds: extra?.storeIds || [],
+    captainIds: extra?.captainIds || [],
   }
   setSession(s)
   return s

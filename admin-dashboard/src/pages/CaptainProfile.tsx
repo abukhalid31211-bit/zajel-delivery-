@@ -23,7 +23,8 @@ import EmptyState from '../components/EmptyState'
 import StatusBadge from '../components/StatusBadge'
 import { useDbList, logAudit } from '../lib/store'
 import { formatDate } from '../lib/db'
-import type { AuditEntry, Captain, District, Governorate, Shift } from '../lib/types'
+import { can, inCaptainScope, inGeoScope, inGovScope, inOrderScope } from '../lib/rbac'
+import type { AuditEntry, Captain, District, Governorate, OrderItem, Shift } from '../lib/types'
 
 const tabs = [
   { label: 'الوثائق', icon: FileImage },
@@ -42,10 +43,11 @@ export default function CaptainProfile() {
   const [params] = useSearchParams()
   const id = params.get('id')
   const captains = useDbList<Captain>('captains')
-  const cap = captains.items.find((c) => c.id === id)
+  const cap = captains.items.find((c) => c.id === id && inCaptainScope(c))
   const govs = useDbList<Governorate>('governorates')
   const districts = useDbList<District>('districts')
   const shifts = useDbList<Shift>('shifts')
+  const orders = useDbList<OrderItem>('orders')
   const audit = useDbList<AuditEntry>('audit')
   const [tab, setTab] = useState(0)
   const [modal, setModal] = useState<'approve' | 'reject' | 'suspend' | 'move' | null>(null)
@@ -56,7 +58,8 @@ export default function CaptainProfile() {
   const [newGov, setNewGov] = useState('')
   const name = cap?.name || '— الاسم الثلاثي'
 
-  const zoneList = useMemo(() => districts.items.filter((d) => !cap?.govId || d.govId === cap.govId), [districts.items, cap])
+  const capOrders = useMemo(() => orders.items.filter((o) => cap && o.captainId === cap.id && inOrderScope(o)), [orders.items, cap])
+  const zoneList = useMemo(() => districts.items.filter((d) => (!cap?.govId || d.govId === cap.govId) && inGeoScope(d.govId, d.id)), [districts.items, cap])
 
   const setStatus = (status: Captain['status'], extra?: Partial<Captain>) => {
     if (!cap) return
@@ -91,19 +94,19 @@ export default function CaptainProfile() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            {(!cap || cap.status === 'بانتظار الموافقة') && (
+            {(!cap || cap.status === 'بانتظار الموافقة') && can('الكباتن', 'موافقة') && (
               <>
                 <button className="btn-primary" onClick={() => setModal('approve')}><CheckCircle2 className="h-4 w-4" /> موافقة</button>
                 <button className="btn-secondary" onClick={() => setModal('reject')}>❌ رفض</button>
               </>
             )}
-            {cap?.status === 'نشط' && (
+            {cap?.status === 'نشط' && can('الكباتن', 'إيقاف') && (
               <button className="btn-ghost" onClick={() => setModal('suspend')}><Ban className="h-4 w-4" /> إيقاف</button>
             )}
-            {cap?.status === 'موقوف' && (
+            {cap?.status === 'موقوف' && can('الكباتن', 'إيقاف') && (
               <button className="btn-primary" onClick={() => { setStatus('نشط'); toast('تم إعادة تفعيل الكابتن') }}>🔄 تفعيل</button>
             )}
-            <button className="btn-ghost" onClick={() => setModal('move')}>نقل المحافظة</button>
+            {can('الكباتن', 'تعديل') && <button className="btn-ghost" onClick={() => setModal('move')}>نقل المحافظة</button>}
           </div>
         </div>
       </div>
@@ -175,6 +178,10 @@ export default function CaptainProfile() {
       {tab === 2 && (
         <DataTable
           columns={['رقم الطلب', 'المحل', 'الحالة', 'القيمة', 'الأجرة', 'التاريخ']}
+          rows={capOrders.map((o) => ({
+            key: o.id,
+            cells: [o.number, o.storeName, <StatusBadge status={o.status} />, `${o.value} د.ع`, `${o.fee} د.ع`, formatDate(o.createdAt)],
+          }))}
           emptyIcon={Package}
           emptyTitle="لا توجد طلبات لهذا الكابتن"
           emptyHint="تظهر هنا جميع طلبيات الكابتن مع إمكانية فتح تفاصيل كل طلب."
@@ -200,10 +207,17 @@ export default function CaptainProfile() {
       {tab === 4 && (
         <div>
           <div className="mb-5 grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
-            {['إجمالي الطلبات', 'المكتملة', 'الملغاة', 'متوسط وقت التوصيل', 'متوسط التقييم', 'ساعات العمل'].map((l) => (
+            {[
+              ['إجمالي الطلبات', String(capOrders.length)],
+              ['المكتملة', String(capOrders.filter((o) => o.status === 'مكتمل').length)],
+              ['الملغاة', String(capOrders.filter((o) => o.status === 'ملغي').length)],
+              ['النشطة', String(capOrders.filter((o) => !['مكتمل', 'ملغي'].includes(o.status)).length)],
+              ['متوسط التقييم', cap?.rating || '—'],
+              ['إجمالي الأجور', `${capOrders.reduce((n, o) => n + Number(o.fee || 0), 0)} د.ع`],
+            ].map(([l, v]) => (
               <div key={l} className="card p-4">
                 <p className="text-[11px] font-medium text-mute">{l}</p>
-                <p className="mt-1.5 text-xl font-bold">—</p>
+                <p className="mt-1.5 text-xl font-bold">{v}</p>
               </div>
             ))}
           </div>
@@ -313,7 +327,7 @@ export default function CaptainProfile() {
           <p className="mt-2 text-xs text-mute">الكابتن مسجّل في محافظة واحدة فقط. النقل متاح للأدمن بناءً على طلب مبرر.</p>
           <select className="field mt-3 cursor-pointer" value={newGov} onChange={(e) => setNewGov(e.target.value)}>
             <option value="">اختر المحافظة الجديدة</option>
-            {govs.items.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+            {govs.items.filter((g) => inGovScope(g.id)).map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
           </select>
           <textarea className="field mt-3 min-h-16 resize-none" placeholder="سبب النقل (مطلوب)" value={reason} onChange={(e) => setReason(e.target.value)} />
           <div className="mt-4 flex gap-2">

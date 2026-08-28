@@ -34,7 +34,7 @@ import { getSettings, applyTheme, getTheme, getBrand } from '../lib/settings'
 import { logSecurity } from '../lib/store'
 import { dbGet } from '../lib/db'
 import type { Captain, OrderItem, SentNotification, StoreItem } from '../lib/types'
-import { can, isSuper, NAV_SECTION } from '../lib/rbac'
+import { can, inCaptainScope, inOrderScope, inStoreScope, isSuper, NAV_SECTION } from '../lib/rbac'
 import { useT } from '../lib/i18n'
 
 type Child = { to: string; label: string }
@@ -103,6 +103,9 @@ const nav: Item[] = [
       { to: '/reports?tab=captains', label: 'تقرير الكباتن' },
       { to: '/reports?tab=stores', label: 'تقرير المحلات' },
       { to: '/reports?tab=zones', label: 'تقرير المناطق' },
+      { to: '/reports?tab=captain-app', label: 'تقارير تطبيق الكابتن' },
+      { to: '/reports?tab=store-app', label: 'تقارير تطبيق المحل' },
+      { to: '/reports?tab=custom', label: 'تقرير مخصص' },
       { to: '/settlement', label: 'التسوية المالية' },
     ],
   },
@@ -185,15 +188,15 @@ export default function AdminLayout() {
   const readySearch = q.trim().length >= 3
   const qn = q.trim()
   const orderHits = useMemo(
-    () => (qn.length < 3 ? [] : dbGet<OrderItem[]>('orders', []).filter((o) => `${o.number} ${o.storeName} ${o.customerName} ${o.customerPhone}`.includes(qn)).slice(0, 5)),
+    () => (qn.length < 3 ? [] : dbGet<OrderItem[]>('orders', []).filter((o) => inOrderScope(o) && `${o.number} ${o.storeName} ${o.customerName} ${o.customerPhone}`.includes(qn)).slice(0, 5)),
     [qn],
   )
   const capHits = useMemo(
-    () => (qn.length < 3 ? [] : dbGet<Captain[]>('captains', []).filter((c) => `${c.name} ${c.phone}`.includes(qn)).slice(0, 5)),
+    () => (qn.length < 3 ? [] : dbGet<Captain[]>('captains', []).filter((c) => inCaptainScope(c) && `${c.name} ${c.phone}`.includes(qn)).slice(0, 5)),
     [qn],
   )
   const storeHits = useMemo(
-    () => (qn.length < 3 ? [] : dbGet<StoreItem[]>('stores', []).filter((s) => `${s.name} ${s.phone}`.includes(qn)).slice(0, 5)),
+    () => (qn.length < 3 ? [] : dbGet<StoreItem[]>('stores', []).filter((s) => inStoreScope(s) && `${s.name} ${s.phone}`.includes(qn)).slice(0, 5)),
     [qn],
   )
 

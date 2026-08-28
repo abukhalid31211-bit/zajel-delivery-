@@ -6,16 +6,17 @@ import DataTable from '../components/DataTable'
 import { useDbList } from '../lib/store'
 import { formatDate } from '../lib/db'
 import { ACTIVE_STATUSES } from '../lib/orders'
+import { inCaptainScope, inGeoScope, inOrderScope, inStoreScope } from '../lib/rbac'
 import type { Captain, District, OrderItem, StoreItem } from '../lib/types'
 
 export default function AdvancedSearch() {
   const navigate = useNavigate()
   const [q, setQ] = useState({ order: '', cap: '', capPhone: '', store: '', storePhone: '', district: '', status: '', from: '', to: '' })
   const [ran, setRan] = useState(false)
-  const captains = useDbList<Captain>('captains').items
-  const stores = useDbList<StoreItem>('stores').items
-  const districts = useDbList<District>('districts').items
-  const orders = useDbList<OrderItem>('orders').items
+  const captains = useDbList<Captain>('captains').items.filter((c) => inCaptainScope(c))
+  const stores = useDbList<StoreItem>('stores').items.filter((s) => inStoreScope(s))
+  const districts = useDbList<District>('districts').items.filter((d) => inGeoScope(d.govId, d.id))
+  const orders = useDbList<OrderItem>('orders').items.filter((o) => inOrderScope(o))
 
   const capHits = ran
     ? captains.filter((c) =>

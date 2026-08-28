@@ -11,7 +11,7 @@ import StatusBadge from '../components/StatusBadge'
 import { useToast } from '../components/Toast'
 import { useDbList, logAudit } from '../lib/store'
 import { uid, nowIso, formatDate } from '../lib/db'
-import { can, inGeoScope } from '../lib/rbac'
+import { can, inGeoScope, inGovScope, inStoreScope } from '../lib/rbac'
 import { getSession } from '../lib/session'
 import { getSettings } from '../lib/settings'
 import { OVERRIDES_KEY, publicPriceFor, diffLabel } from '../lib/pricing'
@@ -51,7 +51,7 @@ export default function PriceCustomization() {
   const pickable = useMemo(
     () =>
       stores.items
-        .filter((s) => inGeoScope(s.govId) && s.status !== 'موقوف')
+        .filter((s) => inStoreScope(s) && s.status !== 'موقوف')
         .slice()
         .sort((a, b) => a.name.localeCompare(b.name, 'ar')),
     [stores.items],
@@ -150,7 +150,7 @@ export default function PriceCustomization() {
   const list = useMemo(() => {
     let rows = overrides.items.filter((o) => {
       const s = storeById(o.storeId)
-      return !!s && inGeoScope(s.govId)
+      return !!s && inStoreScope(s)
     })
     const q = filters.q.trim()
     if (q) rows = rows.filter((o) => `${storeById(o.storeId)?.name} ${storeById(o.storeId)?.phone} ${storeById(o.storeId)?.owner}`.includes(q))
@@ -310,8 +310,8 @@ export default function PriceCustomization() {
       <FilterBar
         searchPlaceholder="ابحث باسم المحل أو رقم هاتفه أو اسم المالك..."
         selects={[
-          { label: 'المحافظة', options: govs.map((g) => g.name) },
-          { label: 'المنطقة', options: districts.map((d) => d.name) },
+          { label: 'المحافظة', options: govs.filter((g) => inGovScope(g.id)).map((g) => g.name) },
+          { label: 'المنطقة', options: districts.filter((d) => inGeoScope(d.govId, d.id)).map((d) => d.name) },
         ]}
         onChange={setFilters}
         onSearch={() => {

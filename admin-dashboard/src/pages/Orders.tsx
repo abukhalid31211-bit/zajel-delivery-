@@ -11,7 +11,7 @@ import { useToast } from '../components/Toast'
 import { getSettings } from '../lib/settings'
 import { logAudit, ORDER_STATUSES, useDbList } from '../lib/store'
 import { uid, nowIso, formatDate } from '../lib/db'
-import { can, inGeoScope } from '../lib/rbac'
+import { can, inCaptainScope, inGeoScope, inGovScope, inOrderScope, inStoreScope } from '../lib/rbac'
 import { ACTIVE_STATUSES, isStuck, shouldAutoCancel, waitMinutes } from '../lib/orders'
 import { overrideFor } from '../lib/pricing'
 import OtherField, { OtherOption } from '../components/OtherOption'
@@ -36,11 +36,11 @@ export default function Orders() {
   const settings = getSettings()
   const { toast, node } = useToast()
   const orders = useDbList<OrderItem>('orders')
-  const stores = useDbList<StoreItem>('stores').items.filter((s) => s.status === 'نشط' || s.status === 'بانتظار الموافقة')
-  const captains = useDbList<Captain>('captains').items
-  const govs = useDbList<Governorate>('governorates').items
+  const stores = useDbList<StoreItem>('stores').items.filter((s) => (s.status === 'نشط' || s.status === 'بانتظار الموافقة') && inStoreScope(s))
+  const captains = useDbList<Captain>('captains').items.filter((c) => inCaptainScope(c))
+  const govs = useDbList<Governorate>('governorates').items.filter((g) => inGovScope(g.id))
   const districtsList = useDbList<District>('districts')
-  const districts = districtsList.items
+  const districts = districtsList.items.filter((d) => inGeoScope(d.govId, d.id))
   const [filters, setFilters] = useState<Filters>(emptyFilters())
   const [loading, setLoading] = useState(false)
   const [tick, setTick] = useState(0)
@@ -88,7 +88,7 @@ export default function Orders() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tick])
 
-  const scoped = orders.items.filter((o) => inGeoScope(o.govId))
+  const scoped = orders.items.filter((o) => inOrderScope(o))
 
   const visible = useMemo(() => {
     let list = scoped
@@ -116,6 +116,9 @@ export default function Orders() {
     setForm(next)
     sessionStorage.setItem(DRAFT, JSON.stringify(next))
   }
+
+  const selectedStore = stores.find((s) => s.id === form.storeId)
+  const orderDistrictOptions = districts.filter((d) => !selectedStore || d.govId === selectedStore.govId)
 
   const createOrder = () => {
     if (!navigator.onLine) return toast('لا يوجد اتصال بالإنترنت')
@@ -286,8 +289,8 @@ export default function Orders() {
             </select>
             <div>
               <select className="field cursor-pointer" value={form.districtId} onChange={(e) => saveDraft({ ...form, districtId: e.target.value })}>
-                <option value="">{districts.length ? 'المنطقة' : 'أضف منطقة أولاً'}</option>
-                {districts.map((d) => (
+                <option value="">{orderDistrictOptions.length ? 'المنطقة' : 'أضف منطقة أولاً'}</option>
+                {orderDistrictOptions.map((d) => (
                   <option key={d.id} value={d.id}>{d.name}</option>
                 ))}
                 <OtherOption label="➕ أخرى — منطقة جديدة" />

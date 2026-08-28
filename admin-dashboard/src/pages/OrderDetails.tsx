@@ -8,7 +8,7 @@ import StatusBadge from '../components/StatusBadge'
 import { getSettings } from '../lib/settings'
 import { logAudit, useDbList } from '../lib/store'
 import { formatDate, nowIso } from '../lib/db'
-import { can } from '../lib/rbac'
+import { can, inCaptainScope, inOrderScope } from '../lib/rbac'
 import { waitMinutes } from '../lib/orders'
 import OtherField, { OtherOption } from '../components/OtherOption'
 import { OTHER, isOther, otherName } from '../lib/customOption'
@@ -36,8 +36,13 @@ export default function OrderDetails() {
   const { toast, node } = useToast()
   const [params] = useSearchParams()
   const orders = useDbList<OrderItem>('orders')
-  const order = orders.items.find((o) => o.id === params.get('id'))
-  const captains = useDbList<Captain>('captains').items.filter((c) => c.status === 'نشط')
+  const order = orders.items.find((o) => o.id === params.get('id') && inOrderScope(o))
+  const captains = useDbList<Captain>('captains').items.filter((c) =>
+    c.status === 'نشط' &&
+    inCaptainScope(c) &&
+    (!order || c.govId === order.govId) &&
+    (!order?.districtId || c.districtIds.length === 0 || c.districtIds.includes(order.districtId)),
+  )
   const [modal, setModal] = useState<'reassign' | 'cancel' | null>(null)
   const [assignMode, setAssignMode] = useState<'auto' | 'manual'>('auto')
   const [reason, setReason] = useState('')
